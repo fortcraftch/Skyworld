@@ -1,0 +1,29 @@
+menus:
+  SHOP_BLOCKS:
+    title: "<dark_gray>Tienda de Bloques"
+    size: 27
+    items:
+      '11':
+        material: COBBLESTONE
+        name: "<white>Vender Adoquín"
+        lore:
+          - "<gray>Precio: <green>1.0 monedas"
+          - "<yellow>Click para vender 10x"
+        action: SELL
+        target-item: <white>Piedra # ID interno del item en StorageBag
+        amount: 10
+        price: 10.0
+      '15':
+        material: STONE
+        name: "<white>Comprar Piedra"
+        lore:
+          - "<gray>Precio: <red>10.0 monedas"
+          - "<yellow>Click para comprar 1x"
+        action: BUY
+        target-item: stone
+        amount: 1
+        price: 10.0
+      '26':
+        material: BARRIER
+        name: "<red>Cerrar"
+        action: CLOSE

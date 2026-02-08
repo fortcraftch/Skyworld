@@ -1,4 +1,126 @@
 package Fortcraft.skyworld.mining;
 
+import Fortcraft.skyworld.logbook.LogbookGUI;
+import Fortcraft.skyworld.utils.ColorUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+
 public class MiningBiome {
+    private final String id;
+    private final String displayName;
+    private final Material icon;
+
+    // AHORA ES UNA LISTA DE DROPS POR MATERIAL
+    private final Map<Material, List<MiningDrop>> drops = new HashMap<>();
+    private final Set<String> uniqueSourceIds = new HashSet<>();
+
+    public MiningBiome(String id, ConfigurationSection config) {
+        this.id = id;
+        this.displayName = config.getString("display_name", id);
+        this.icon = Material.valueOf(config.getString("icon", "STONE_PICKAXE"));
+
+        ConfigurationSection blocksSec = config.getConfigurationSection("blocks");
+        if (blocksSec != null) {
+            for (String blockKey : blocksSec.getKeys(false)) {
+                // 1. Datos del Bloque Padre (Source)
+                Material sourceMat = Material.valueOf(blockKey.toUpperCase());
+                ConfigurationSection blockSec = blocksSec.getConfigurationSection(blockKey);
+
+                String sourceName = blockSec.getString("name", blockKey);
+                Material defTransform = Material.valueOf(blockSec.getString("transform-to", "BEDROCK"));
+                int defRegen = blockSec.getInt("regen-time", 5);
+
+                // 2. Leemos la lista de drops
+                List<MiningDrop> blockDrops = new ArrayList<>();
+                ConfigurationSection dropsListSec = blockSec.getConfigurationSection("drops");
+
+                if (dropsListSec != null) {
+                    for (String dropId : dropsListSec.getKeys(false)) {
+                        ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
+
+                        MiningDrop drop = MiningDrop.fromConfig(
+                                sourceMat,
+                                sourceName,
+                                singleDropSec,
+                                defTransform,
+                                defRegen
+                        );
+                        blockDrops.add(drop);
+                    }
+                }
+
+                // 3. Guardamos
+                if (!blockDrops.isEmpty()) {
+                    drops.put(sourceMat, blockDrops);
+                    // Solo añadimos el ID del source una vez al set de únicos
+                    uniqueSourceIds.add(LogbookGUI.getCleanId(sourceName));
+                }
+            }
+        }
+    }
+
+    /**
+     * Obtiene un drop aleatorio basado en peso.
+     */
+    public MiningDrop getWeightedDrop(Material source) {
+        List<MiningDrop> possibleDrops = drops.get(source);
+        if (possibleDrops == null || possibleDrops.isEmpty()) return null;
+
+        double totalWeight = possibleDrops.stream().mapToDouble(MiningDrop::getWeight).sum();
+        double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
+
+        double currentWeight = 0;
+        for (MiningDrop drop : possibleDrops) {
+            currentWeight += drop.getWeight();
+            if (currentWeight >= randomValue) {
+                return drop;
+            }
+        }
+        return possibleDrops.getFirst(); // Fallback
+    }
+
+    public int getTotalUniqueSources() { return uniqueSourceIds.size(); }
+    public Set<String> getUniqueSourceIds() { return uniqueSourceIds; }
+    public String getId() { return id; }
+    public String getDisplayName() { return displayName; }
+
+    public Collection<MiningDrop> getAllDrops() {
+        return drops.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public ItemStack getGuiIcon(int discoveredCount) {
+        ItemStack item = new ItemStack(icon);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            meta.displayName(ColorUtils.format(getDisplayName())
+                    .decoration(TextDecoration.ITALIC, false));
+
+            List<Component> lore = new ArrayList<>();
+
+            lore.add(ColorUtils.format("<gray>Descubiertos: <yellow>" + discoveredCount + "/" + getTotalUniqueSources())
+                    .decoration(TextDecoration.ITALIC, false));
+
+            lore.add(Component.empty());
+
+            lore.add(ColorUtils.format("<yellow>Click para ver colección")
+                    .decoration(TextDecoration.ITALIC, false));
+
+            meta.lore(lore);
+            item.setItemMeta(meta);
+        }
+
+        return item;
+    }
 }

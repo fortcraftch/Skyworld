@@ -62,11 +62,12 @@ public class MobDisplayManager implements Manager {
         }
     }
 
-    public void teleportDisplay(LivingEntity mob) {
+    public MobDisplay getDisplay(LivingEntity mob) {
         MobDisplay display = displays.get(mob.getUniqueId());
         if (display != null) {
-            display.teleportSmooth();
+            return null;
         }
+        return display;
     }
 
     public void removeDisplay(LivingEntity mob) {

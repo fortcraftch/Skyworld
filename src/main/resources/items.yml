@@ -1,0 +1,28 @@
+# Estructura para tus items tipo Skyblock
+novice_sword:
+  material: WOODEN_SWORD
+  name: "&fEspada de Novato"
+  category: "WEAPON"
+  stats:
+    GENERIC_ATTACK_DAMAGE: 5.0
+  lore:
+    - "&7Una espada desgastada."
+    - ""
+    - "&fTipo: &7Espada Corta"
+
+iron_sword:
+  material: IRON_SWORD
+  name: "&7Espada de Hierro"
+  category: "WEAPON"
+  stats:
+    LUCK: 150.0
+    GENERIC_ATTACK_DAMAGE: 8.0
+  lore:
+    - "&7Mas pesada y fuerte."
+
+apple:
+  material: APPLE
+  name: "&aManzana Curativa"
+  category: "CONSUMABLE"
+  lore:
+    - "&7Restaura un poco de vida."

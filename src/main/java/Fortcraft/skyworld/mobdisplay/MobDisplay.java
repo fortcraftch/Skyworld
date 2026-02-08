@@ -1,10 +1,9 @@
-package Fortcraft.skyworld.managers.mobdisplay;
+package Fortcraft.skyworld.mobdisplay;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.TextDisplay;
 
@@ -12,6 +11,7 @@ public class MobDisplay {
 
     private final LivingEntity mob;
     private final TextDisplay textDisplay;
+    private Location lastKnownLocation;
 
     public MobDisplay(LivingEntity mob) {
         this.mob = mob;
@@ -25,6 +25,7 @@ public class MobDisplay {
             display.setShadowed(true);
             display.setAlignment(TextDisplay.TextAlignment.CENTER);
             display.setDefaultBackground(false);
+            display.setPersistent(false);
         });
 
         update();
@@ -48,9 +49,16 @@ public class MobDisplay {
         textDisplay.text(text);
     }
 
-    public void teleport() {
-        Location loc = mob.getLocation().clone().add(0, mob.getHeight() + 0.5, 0);
-        textDisplay.teleport(loc);
+    public void teleportSmooth() {
+        Location currentLoc = mob.getLocation().clone().add(0, mob.getHeight() + 0.6, 0);
+
+        // Solo actualizar si la distancia es significativa
+        if (lastKnownLocation != null && lastKnownLocation.distanceSquared(currentLoc) < 0.01) return;
+
+        textDisplay.setTeleportDuration(2); // suaviza el movimiento
+        textDisplay.teleport(currentLoc);
+
+        lastKnownLocation = currentLoc.clone();
     }
 
     public void remove() {

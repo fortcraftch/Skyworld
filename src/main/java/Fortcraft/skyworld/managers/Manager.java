@@ -1,4 +1,8 @@
 package Fortcraft.skyworld.managers;
 
-public class Manager {
+public interface Manager {
+
+    void load();
+    void unload();
 }
+

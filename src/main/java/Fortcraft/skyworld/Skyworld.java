@@ -1,13 +1,17 @@
 package Fortcraft.skyworld;
 
+import Fortcraft.skyworld.items.ItemRegistry;
+import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import Fortcraft.skyworld.managers.ManagerHandler;
 import Fortcraft.skyworld.listeners.MobDisplayListener;
+import org.jetbrains.annotations.NotNull;
 
-public final class SkyworldCore extends JavaPlugin {
+public final class Skyworld extends JavaPlugin {
 
-    private static SkyworldCore instance;
+    public static NamespacedKey ITEM_CATEGORY_KEY;
+    private static Skyworld instance;
     private ManagerHandler managerHandler;
 
     @Override
@@ -15,6 +19,10 @@ public final class SkyworldCore extends JavaPlugin {
         instance = this;
 
         saveDefaultConfig();
+
+        ITEM_CATEGORY_KEY = new NamespacedKey(this, "item_category");
+
+        ItemRegistry.load();
 
         this.managerHandler = new ManagerHandler();
         this.managerHandler.loadManagers();
@@ -27,6 +35,9 @@ public final class SkyworldCore extends JavaPlugin {
         getLogger().info("Skyworld Core habilitado correctamente.");
     }
 
+    public static NamespacedKey getKey(String key) {
+        return new NamespacedKey(getInstance(), key);
+    }
 
     @Override
     public void onDisable() {
@@ -37,14 +48,13 @@ public final class SkyworldCore extends JavaPlugin {
         getLogger().info("Skyworld Core deshabilitado.");
     }
 
-    public static SkyworldCore getInstance() {
+    public static Skyworld getInstance() {
         return instance;
     }
 
     public ManagerHandler getManagerHandler() {
         return managerHandler;
     }
-
 }
 
 

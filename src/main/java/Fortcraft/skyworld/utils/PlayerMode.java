@@ -1,4 +1,4 @@
-package Fortcraft.skyworld.hotbar;
+package Fortcraft.skyworld.utils;
 
 public enum PlayerMode {
     GLOBAL("Global", "§f"),

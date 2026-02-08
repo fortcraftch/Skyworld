@@ -1,0 +1,16 @@
+# =========================
+# Skyworld Core Config
+# =========================
+
+mob-display:
+  enabled: true
+  view-distance: 32
+  update-ticks: 1
+
+global-spawn:
+  world: world
+  x: 10.5
+  y: 100
+  z: 10.5
+  yaw: 0
+  pitch: 0

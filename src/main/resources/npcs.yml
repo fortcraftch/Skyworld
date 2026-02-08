@@ -1,0 +1,12 @@
+npcs:
+  merchant_blocks:
+    name: "<yellow>Comerciante de Bloques"
+    type: VILLAGER
+    menu: SHOP_BLOCKS
+    location:
+      world: world
+      x: 308.5
+      y: 25.0
+      z: 308.5
+      yaw: 0.0
+      pitch: 0.0
