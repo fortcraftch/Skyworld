@@ -1,0 +1,4 @@
+name: Skyworld
+version: '1.0-SNAPSHOT'
+main: Fortcraft.skyworld.Skyworld
+api-version: '1.21'
