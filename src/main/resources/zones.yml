@@ -1,6 +1,6 @@
 fishing_biomes:
   lake:
-    display_name: "&bLago Pacífico"
+    display_name: "<gradient:#29CEDD:#334B9D>Lago Pacífico"
     icon: WATER_BUCKET
     drops:
       Bacalao:
@@ -142,7 +142,7 @@ fishing_biomes:
             slot: 14
 
   deep_ocean:
-    display_name: "&1Océano Profundo"
+    display_name: "<gradient:#29CEDD:#334B9D>Océano Profundo"
     icon: PRISMARINE_SHARD
     drops:
       Bacalao:
@@ -174,7 +174,7 @@ fishing_biomes:
 
 mining_biomes:
   deep_caves:
-    display_name: "&1Cuevas Profundas"
+    display_name: "<gradient:#8F8888:#564D4D>Cuevas Profundas"
     icon: DEEPSLATE_DIAMOND_ORE
     blocks:
       DEEPSLATE_DIAMOND_ORE:
@@ -255,7 +255,7 @@ mining_biomes:
             slot: 10
 
   caves:
-    display_name: "&1Cuevas"
+    display_name: "<gradient:#8F8888:#564D4D>Cuevas"
     icon: DIAMOND_ORE
     blocks:
       DIAMOND_ORE:
@@ -318,7 +318,7 @@ mining_biomes:
 
 farming_biomes:
   campo_trigo:
-    display_name: "&eCampos de Trigo"
+    display_name: "<gradient:#DEDA4C:#9F950B>Campos de Trigo"
     icon: WHEAT
     crops:
       WHEAT:
@@ -343,7 +343,7 @@ farming_biomes:
             exp: 5
 
   huerto_real:
-    display_name: "&6Huerto Real"
+    display_name: "<gradient:#DEDA4C:#9F950B>Huerto Real"
     icon: GOLDEN_HOE
     crops:
       WHEAT:
@@ -430,7 +430,7 @@ farming_biomes:
 
 foraging_biomes:
   oak_forest:
-    display_name: "&aBosque de Robles"
+    display_name: "<gradient:#60DE4C:#259F0B>Bosque de Robles"
     logs:
       OAK_LOG:
         name: "Tronco de Roble"
