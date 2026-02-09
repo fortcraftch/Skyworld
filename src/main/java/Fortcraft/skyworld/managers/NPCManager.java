@@ -90,7 +90,7 @@ public class NPCManager implements Manager {
             Location loc = new Location(world, x, y, z, yaw, pitch);
             EntityType type = EntityType.valueOf(typeStr);
 
-            SkyblockNPC npc = new SkyblockNPC(id, name.replace("&", "§"), type, loc, menuType);
+            SkyblockNPC npc = new SkyblockNPC(id, name, type, loc, menuType);
             npcData.put(id, npc);
         }
         Skyworld.getInstance().getLogger().info("Cargados " + npcData.size() + " NPCs.");
@@ -137,7 +137,7 @@ public class NPCManager implements Manager {
 
     private void saveToConfig(SkyblockNPC npc) {
         String path = "npcs." + npc.getId();
-        npcConfig.set(path + ".name", npc.getName().replace("§", "&"));
+        npcConfig.set(path + ".name", npc.getName());
         npcConfig.set(path + ".type", npc.getType().name());
         npcConfig.set(path + ".menu", npc.getMenuType());
 
@@ -196,7 +196,7 @@ public class NPCManager implements Manager {
         entity.setRemoveWhenFarAway(false);
         entity.setSilent(true);
         entity.setCollidable(true);
-        entity.setCustomName(npc.getName());
+        entity.customName(Fortcraft.skyworld.utils.ColorUtils.format(npc.getName()));
         entity.setCustomNameVisible(true);
 
         // Evitamos que se guarde en el archivo del mundo (Chunk)
