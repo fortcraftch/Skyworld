@@ -1,9 +1,6 @@
 package Fortcraft.skyworld.listeners;
 
-import Fortcraft.skyworld.managers.FarmManager;
-import Fortcraft.skyworld.managers.ForagingManager;
-import Fortcraft.skyworld.managers.ManagerHandler;
-import Fortcraft.skyworld.managers.MiningManager;
+import Fortcraft.skyworld.managers.*;
 import Fortcraft.skyworld.zones.FarmZone;
 import Fortcraft.skyworld.zones.ForagingZone;
 import Fortcraft.skyworld.zones.MiningZone;
@@ -29,6 +26,7 @@ public class ZoneInteractionListener implements Listener {
     private final MiningManager miningManager;
     private final FarmManager farmManager;
     private final ForagingManager foragingManager;
+    private final QuestManager questManager;
 
     private final Map<UUID, Long> interactCooldown = new HashMap<>();
     private static final long COOLDOWN_TIME = 250;
@@ -37,6 +35,7 @@ public class ZoneInteractionListener implements Listener {
         this.miningManager = manager.getMiningManager();
         this.farmManager = manager.getFarmManager();
         this.foragingManager = manager.getForagingManager();
+        this.questManager = manager.getQuestManager();
     }
 
     @EventHandler
@@ -61,12 +60,16 @@ public class ZoneInteractionListener implements Listener {
         e.setCancelled(true);
         e.setDropItems(false);
 
+        String blockTypeName = block.getType().name();
+
         MiningZone miningZone = miningManager.getZoneAt(block);
         if (miningZone != null) {
             boolean success = miningManager.handleMine(p, block, miningZone);
-
             if (!success) {
                 interactCooldown.put(uuid, now);
+            } else {
+                // INYECCIÓN DE MISIÓN: Minar
+                questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
             }
             return;
         }
@@ -74,9 +77,11 @@ public class ZoneInteractionListener implements Listener {
         FarmZone farmZone = farmManager.getZoneAt(block.getLocation());
         if (farmZone != null) {
             boolean success = farmManager.handleHarvest(p, block, farmZone);
-
             if (!success) {
                 interactCooldown.put(uuid, now);
+            } else {
+                // INYECCIÓN DE MISIÓN: Cosechar/Farming
+                questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
             }
             return;
         }
@@ -84,9 +89,11 @@ public class ZoneInteractionListener implements Listener {
         ForagingZone foragingZone = foragingManager.getZoneAt(block.getLocation());
         if (foragingZone != null) {
             boolean success = foragingManager.handleBreak(p, block, foragingZone);
-
             if (!success) {
                 interactCooldown.put(uuid, now);
+            } else {
+                // INYECCIÓN DE MISIÓN: Talar/Foraging
+                questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
             }
             return;
         }

@@ -1,0 +1,32 @@
+quests:
+  tutorial_inicio:
+    title: "§bAventura Inicial"
+    stages:
+      - description: "Camina hacia la Taberna Central"
+        type: "VISIT_LOCATION"
+        target: "spawn"
+        amount: 1
+      - description: "Mina bloques de Carbón en la cantera"
+        type: "MINE_BLOCK"
+        target: "IRON_ORE"
+        amount: 5
+      - description: "Habla con el Alcalde para reportar tu estado"
+        type: "TALK_NPC"
+        target: "merchant_blocks"
+        amount: 1
+
+  tutorial_inicio1:
+    title: "§bAventura Inicial"
+    stages:
+      - description: "Camina hacia la Taberna Central"
+        type: "VISIT_LOCATION"
+        target: "spawn"
+        amount: 1
+      - description: "Mina bloques de Carbón en la cantera"
+        type: "MINE_BLOCK"
+        target: "IRON_ORE"
+        amount: 5
+      - description: "Habla con el Alcalde para reportar tu estado"
+        type: "TALK_NPC"
+        target: "merchant_blocks"
+        amount: 1

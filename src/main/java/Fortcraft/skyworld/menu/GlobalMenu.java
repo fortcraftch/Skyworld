@@ -24,7 +24,7 @@ public class GlobalMenu {
         // Lógica para llenar el inventario según el modo
         switch (mode) {
             case GLOBAL -> {
-                // Tus items de aventura...
+                inv.setItem(13, createQuestMenuItem());
             }
             case MINING -> {
                 // Tus items de minería...
@@ -44,6 +44,23 @@ public class GlobalMenu {
                     "§7acceso rápido para el modo " + mode.getDisplayName(),
                     "",
                     "§e▶ Click para editar"
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack createQuestMenuItem() {
+        ItemStack item = new ItemStack(Material.BOOK);
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§b§l📖 Diario de Misiones");
+            meta.setLore(List.of(
+                    "§7Revisa tus misiones en progreso,",
+                    "§7tus objetivos completados y activa",
+                    "§7el rastreador visual de partículas.",
+                    "",
+                    "§e▶ Click para abrir el diario"
             ));
             item.setItemMeta(meta);
         }

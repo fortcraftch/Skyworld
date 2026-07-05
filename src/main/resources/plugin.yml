@@ -1,4 +1,14 @@
 name: Skyworld
-version: '1.1-SNAPSHOT'
+version: '1.2-SNAPSHOT'
 main: Fortcraft.skyworld.Skyworld
 api-version: '1.21'
+commands:
+  pathtool:
+    description: Entrega la herramienta de administración para la creación de redes de grafos.
+    permission: skyworld.admin.paths
+    usage: /<command>
+
+  questadmin:
+    description: "Comando de administración del sistema de misiones."
+    permission: skyworld.admin.quests
+    usage: "/questadmin <iniciar|completar|reset> <id_mision> [jugador]"

@@ -113,6 +113,10 @@ public class DataManager implements Manager {
                 } catch (IllegalArgumentException ignored) {}
             }
         }
+
+        // --- 5. MISIONES Y RASTREO (INTEGRACIÓN) ---
+        data.loadQuestsProgress(config);
+
         return data;
     }
 
@@ -153,7 +157,7 @@ public class DataManager implements Manager {
             });
         }
 
-        // Guardar Almacén
+        // --- GUARDAR ALMACÉN ---
         StorageBag bag = data.getStorageBag();
         bag.getCategorizedContents().forEach((mode, items) -> {
             if (items.isEmpty()) return;
@@ -167,6 +171,9 @@ public class DataManager implements Manager {
                 config.set(path + ".rarity", itemData.getRarity().name());
             });
         });
+
+        // --- GUARDAR MISIONES Y RASTREO (INTEGRACIÓN) ---
+        data.saveQuestsProgress(config);
 
         try {
             config.save(file);

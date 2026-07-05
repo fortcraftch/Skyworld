@@ -25,6 +25,8 @@ public class ManagerHandler {
     private ScoreboardManager scoreboardManager;
     private NPCManager npcManager;
     private MenuManager menuManager;
+    private NavigationManager navigationManager;
+    private QuestManager questManager;
 
     public void loadManagers() {
         mobDisplayManager = new MobDisplayManager();
@@ -40,6 +42,8 @@ public class ManagerHandler {
         scoreboardManager = new ScoreboardManager();
         npcManager = new NPCManager();
         menuManager = new MenuManager();
+        navigationManager = new NavigationManager();
+        questManager = new QuestManager();
         StorageManager storageManager = new StorageManager();
         RespawnManager respawnManager = new RespawnManager(zoneManager);
 
@@ -56,6 +60,8 @@ public class ManagerHandler {
         managers.add(scoreboardManager);
         managers.add(npcManager);
         managers.add(menuManager);
+        managers.add(navigationManager);
+        managers.add(questManager);
         managers.add(storageManager);
         managers.add(respawnManager);
 
@@ -65,6 +71,7 @@ public class ManagerHandler {
                 new ZoneInteractionListener(this),
                 Skyworld.getInstance()
         );
+
     }
 
     public void unloadManagers() {
@@ -103,5 +110,10 @@ public class ManagerHandler {
     public EconomyManager getEconomyManager() { return economyManager; }
 
     public NPCManager getNpcManager() { return npcManager; }
+
+    public NavigationManager getNavigationManager() { return navigationManager; }
+
+    public QuestManager getQuestManager() { return questManager; }
+
 }
 

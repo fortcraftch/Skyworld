@@ -115,4 +115,20 @@ public class PlayerData {
 
     public boolean hasDiscovered(String itemId) { return discoveredItems.contains(itemId); }
     public Set<String> getDiscoveredItems() { return discoveredItems; }
+
+    // --- INTEGRACIÓN DE MISIONES ---
+
+    public void loadQuestsProgress(org.bukkit.configuration.file.FileConfiguration playerConfig) {
+        var questManager = Fortcraft.skyworld.Skyworld.getInstance().getManagerHandler().getQuestManager();
+        if (questManager != null) {
+            questManager.loadPlayerProgress(this.uuid, playerConfig);
+        }
+    }
+
+    public void saveQuestsProgress(org.bukkit.configuration.file.FileConfiguration playerConfig) {
+        var questManager = Fortcraft.skyworld.Skyworld.getInstance().getManagerHandler().getQuestManager();
+        if (questManager != null) {
+            questManager.savePlayerProgress(this.uuid, playerConfig);
+        }
+    }
 }

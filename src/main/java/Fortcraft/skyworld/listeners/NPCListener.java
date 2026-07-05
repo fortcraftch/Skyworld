@@ -5,7 +5,9 @@ import Fortcraft.skyworld.managers.MenuManager;
 import Fortcraft.skyworld.managers.NPCManager;
 import Fortcraft.skyworld.menu.SkyblockMenu;
 import Fortcraft.skyworld.npcs.SkyblockNPC;
+import Fortcraft.skyworld.quests.QuestType;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -25,8 +27,6 @@ public class NPCListener implements Listener {
         if (e.getHand() != EquipmentSlot.HAND) return;
 
         Entity clicked = e.getRightClicked();
-
-        // Buscamos el ID del NPC en los metadatos de la entidad
         if (!clicked.hasMetadata("NPC_DATA_ID")) return;
 
         String npcId = "";
@@ -35,22 +35,25 @@ public class NPCListener implements Listener {
             break;
         }
 
+        Player player = e.getPlayer();
         SkyblockNPC npc = manager.getNPCById(npcId);
+        if (npc == null) return;
+
+        // INYECCIÓN DE MISIÓN: Hablar con el NPC
+        Skyworld.getInstance().getManagerHandler().getQuestManager()
+                .handleProgress(player, QuestType.TALK_NPC, npc.getId(), 1);
 
         String menuType = npc.getMenuType();
-
-        // Obtener el gestor de menús
         MenuManager menuManager = Skyworld.getInstance().getManagerHandler().getMenuManager();
         SkyblockMenu menu = menuManager.getMenu(menuType);
 
         if (menu != null) {
-            menu.open(e.getPlayer());
+            menu.open(player);
         } else {
-            // Fallback por si el menú no existe o es "QUEST"
             if (menuType.equals("QUEST")) {
-                e.getPlayer().sendMessage("§eNPC: §fPronto...");
+                player.sendMessage("§eNPC: §fNo tengo más tareas para ti por ahora.");
             } else {
-                e.getPlayer().sendMessage("§cError: Menú '" + menuType + "' no configurado.");
+                player.sendMessage("§cError: Menú '" + menuType + "' no configurado.");
             }
         }
     }

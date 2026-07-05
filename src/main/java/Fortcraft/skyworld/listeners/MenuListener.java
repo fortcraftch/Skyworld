@@ -5,6 +5,7 @@ import Fortcraft.skyworld.managers.EconomyManager;
 import Fortcraft.skyworld.menu.LoadoutGUI;
 import Fortcraft.skyworld.menu.MenuItem;
 import Fortcraft.skyworld.menu.SkyblockMenu;
+import Fortcraft.skyworld.menu.QuestMenu;
 import Fortcraft.skyworld.storage.StorageBag;
 import Fortcraft.skyworld.utils.HotbarSlot;
 import Fortcraft.skyworld.utils.PlayerMode;
@@ -24,7 +25,7 @@ public class MenuListener implements Listener {
         if (e.getCurrentItem() == null) return;
 
         // --- PRIORIDAD 1: MENÚS DINÁMICOS (Basados en Holder) ---
-        // Esto detecta cualquier menú cargado desde menus.yml
+        // Esto detecta cualquier menú que extienda de SkyblockMenu (como el catálogo plano o QuestMenu)
         if (e.getInventory().getHolder() instanceof SkyblockMenu) {
             e.setCancelled(true);
             handleDynamicMenu(e);
@@ -39,10 +40,21 @@ public class MenuListener implements Listener {
         if (title.contains("Menú ")) {
             e.setCancelled(true);
             ItemStack item = e.getCurrentItem();
-            if (item.getType() == Material.ANVIL && item.hasItemMeta()
-                    && item.getItemMeta().getDisplayName().contains("Configurar")) {
-                LoadoutGUI.open(player);
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+
+            if (item.hasItemMeta()) {
+                // Opción A: Botón de configurar equipamiento (Anvil, Slot 22)
+                if (item.getType() == Material.ANVIL && item.getItemMeta().getDisplayName().contains("Configurar")) {
+                    LoadoutGUI.open(player);
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                    return;
+                }
+
+                // Opción B: Botón del diario de misiones (Book, Slot 13)
+                if (item.getType() == Material.BOOK && item.getItemMeta().getDisplayName().contains("Diario de Misiones")) {
+                    QuestMenu.open(player);
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1.1f);
+                    return;
+                }
             }
             return;
         }
@@ -100,7 +112,7 @@ public class MenuListener implements Listener {
     }
 
     /**
-     * Lógica para los menús cargados desde menus.yml
+     * Lógica para los menús cargados desde menus.yml o menús dinámicos controlados por holder
      */
     private void handleDynamicMenu(InventoryClickEvent e) {
         SkyblockMenu menu = (SkyblockMenu) e.getInventory().getHolder();
@@ -136,7 +148,21 @@ public class MenuListener implements Listener {
                 }
             }
             case CLOSE -> p.closeInventory();
-            case COMMAND -> p.performCommand(item.getTargetId());
+            case COMMAND -> {
+                // Cerramos primero el inventario para evitar superposiciones visuales
+                p.closeInventory();
+
+                // Si viene del menú de misiones (ej: "pathtool goto tutorial_inicio"), interceptamos
+                String cmd = item.getTargetId();
+                if (cmd.startsWith("pathtool goto ")) {
+                    String questId = cmd.replace("pathtool goto ", "");
+                    handler.getQuestManager().setTrackingQuest(p, questId);
+                    p.playSound(p.getLocation(), Sound.ITEM_ARMOR_EQUIP_ELYTRA, 1f, 1.3f);
+                } else {
+                    p.performCommand(cmd);
+                }
+            }
+            case NONE -> {}
         }
     }
 }

@@ -1,0 +1,408 @@
+fishing_biomes:
+  lake:
+    display_name: "<gradient:#29CEDD:#334B9D>Lago Pacífico"
+    icon: WATER_BUCKET
+    drops:
+      Bacalao:
+        name: "Bacalao"
+        rarity: 1
+        class: "comun"
+        variants:
+          pequeño:
+            display: "★"
+            class: "raro"
+            material: COD
+            weight: 30.0
+            rarity: 1
+            slot: 10
+          mediano:
+            display: "★★"
+            class: "epico"
+            material: COD
+            weight: 15.0
+            rarity: 2
+            slot: 10
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: COD
+            weight: 5.0
+            rarity: 3
+            slot: 10
+      Salmón:
+        name: "Salmón"
+        rarity: 2
+        class: "especial"
+        variants:
+          pequeño:
+            display: "★"
+            class: "raro"
+            material: SALMON
+            weight: 30.0
+            rarity: 2
+            slot: 11
+          mediano:
+            display: "★★"
+            class: "epico"
+            material: SALMON
+            weight: 15.0
+            rarity: 3
+            slot: 11
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: SALMON
+            weight: 5.0
+            rarity: 4
+            slot: 11
+      Pez Tropical:
+        name: "Pez Tropical"
+        class: "raro"
+        rarity: 3
+        variants:
+          pequeño:
+            display: "★"
+            class: "raro"
+            material: TROPICAL_FISH
+            weight: 30.0
+            rarity: 3
+            slot: 12
+          mediano:
+            display: "★★"
+            class: "epico"
+            material: TROPICAL_FISH
+            weight: 15.0
+            rarity: 4
+            slot: 12
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: TROPICAL_FISH
+            weight: 5.0
+            rarity: 5
+            slot: 12
+      Pez Globo:
+        name: "Pez Globo"
+        class: "epico"
+        rarity: 4
+        variants:
+          pequeño:
+            display: "★"
+            class: "raro"
+            material: PUFFERFISH
+            weight: 30.0
+            rarity: 4
+            slot: 13
+          mediano:
+            display: "★★"
+            class: "epico"
+            material: PUFFERFISH
+            weight: 15.0
+            rarity: 5
+            slot: 13
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: PUFFERFISH
+            weight: 5.0
+            rarity: 6
+            slot: 13
+      Cascara de Nautilio:
+        name: "Cascara de Nautilio"
+        rarity: 5
+        class: "legendario"
+        variants:
+          pequeña:
+            display: "★"
+            class: "raro"
+            material: NAUTILUS_SHELL
+            weight: 30.0
+            rarity: 5
+            slot: 14
+          mediana:
+            display: "★★"
+            class: "epico"
+            material: NAUTILUS_SHELL
+            weight: 15.0
+            rarity: 6
+            slot: 14
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: NAUTILUS_SHELL
+            weight: 5.0
+            rarity: 7
+            slot: 14
+          gigante:
+            display: "★★★★"
+            class: "exotico"
+            material: NAUTILUS_SHELL
+            weight: 5.0
+            rarity: 8
+            slot: 14
+
+  deep_ocean:
+    display_name: "<gradient:#29CEDD:#334B9D>Océano Profundo"
+    icon: PRISMARINE_SHARD
+    drops:
+      Bacalao:
+        name: "Bacalao"
+        class: "comun"
+        rarity: 1
+        variants:
+          grande:
+            display: "★★★"
+            class: "legendario"
+            material: COD
+            weight: 35.0
+            rarity: 3
+            slot: 10
+          gigante:
+            display: "★★★★"
+            class: "exotico"
+            material: COD
+            weight: 30.0
+            rarity: 4
+            slot: 10
+      Calamar Brillante:
+        material: GLOW_INK_SAC
+        name: "Calamar Brillante"
+        class: "exotico"
+        weight: 70
+        rarity: 11
+        slot: 11
+
+mining_biomes:
+  deep_caves:
+    display_name: "<gradient:#8F8888:#564D4D>Cuevas Profundas"
+    icon: DEEPSLATE_DIAMOND_ORE
+    blocks:
+      DEEPSLATE_DIAMOND_ORE:
+        name: "Diamante de Profundidad"
+        transform-to: DEEPSLATE
+        regen-time: 5
+        drops:
+          diamante:
+            name: "Diamante"
+            drop: DIAMOND
+            amount: 1
+            class: "raro"
+            weight: 90.0
+            slot: 13
+          diamante_denso:
+            name: "Diamante Denso"
+            drop: DIAMOND_BLOCK
+            amount: 1
+            class: "epico"
+            weight: 10.0
+            slot: 13
+      DEEPSLATE_IRON_ORE:
+        name: "Hierro de Profundidad"
+        transform-to: DEEPSLATE
+        regen-time: 3
+        drops:
+          hierro:
+            name: "Hierro"
+            drop: RAW_IRON
+            amount: 1
+            class: "especial"
+            weight: 90.0
+            slot: 12
+          hierro_denso:
+            name: "Hierro Denso"
+            drop: IRON_BLOCK
+            amount: 1
+            class: "raro"
+            weight: 10.0
+            slot: 12
+      DEEPSLATE:
+        name: "Piedra de Profundidad"
+        transform-to: BEDROCK
+        regen-time: 1
+        drops:
+          piedra:
+            name: "Piedra"
+            drop: COBBLESTONE
+            amount: 1
+            class: "comun"
+            weight: 90.0
+            slot: 11
+          piedra_densa:
+            name: "Piedra Densa"
+            drop: STONE
+            amount: 1
+            class: "especial"
+            weight: 10.0
+            slot: 11
+      STONE:
+        name: "Piedra"
+        transform-to: BEDROCK
+        regen-time: 1
+        drops:
+          piedra:
+            name: "Piedra"
+            drop: COBBLESTONE
+            amount: 1
+            class: "comun"
+            weight: 90.0
+            slot: 10
+          piedra_densa:
+            name: "Piedra Densa"
+            drop: STONE
+            amount: 1
+            class: "especial"
+            weight: 10.0
+            slot: 10
+
+  caves:
+    display_name: "<gradient:#8F8888:#564D4D>Cuevas"
+    icon: DIAMOND_ORE
+    blocks:
+      DIAMOND_ORE:
+        name: "Diamante"
+        transform-to: STONE
+        regen-time: 5
+        drops:
+          diamante:
+            name: "Diamante"
+            drop: DIAMOND
+            amount: 1
+            class: "raro"
+            weight: 90.0
+            slot: 12
+          diamante_denso:
+            name: "Diamante Denso"
+            drop: DIAMOND_BLOCK
+            amount: 1
+            class: "epico"
+            weight: 10.0
+            slot: 12
+      IRON_ORE:
+        name: "Hierro"
+        transform-to: STONE
+        regen-time: 3
+        drops:
+          hierro:
+            name: "Hierro"
+            drop: RAW_IRON
+            amount: 1
+            class: "especial"
+            weight: 90.0
+            slot: 11
+          hierro_denso:
+            name: "Hierro Denso"
+            drop: IRON_BLOCK
+            amount: 1
+            class: "raro"
+            weight: 10.0
+            slot: 11
+      STONE:
+        name: "Piedra"
+        transform-to: BEDROCK
+        regen-time: 1
+        drops:
+          piedra:
+            name: "Piedra"
+            drop: COBBLESTONE
+            amount: 1
+            class: "comun"
+            weight: 90.0
+            slot: 10
+          piedra_densa:
+            name: "Piedra Densa"
+            drop: STONE
+            amount: 1
+            class: "especial"
+            weight: 10.0
+            slot: 10
+
+
+        drops:
+          trigo:
+            name: "Trigo Común"
+            drop: WHEAT
+            amount: 1
+            class: "comun"
+            weight: 90.0
+            slot: 10
+            exp: 2
+          trigo_denso:
+            name: "Trigo Común Denso"
+            drop: HAY_BLOCK
+            amount: 1
+            class: "especial"
+            weight: 10.0
+            slot: 10
+            exp: 5
+
+        drops:
+          zanahoria:
+            name: "Zanahoria Dulce"
+            drop: CARROT
+            amount: 1
+            class: "raro"
+            weight: 90.0
+            slot: 12
+            exp: 2
+          zanahoria_densa:
+            name: "Zanahoria Dulce Densa"
+            drop: ORANGE_CONCRETE
+            class: "epico"
+            amount: 1
+            weight: 10.0
+            slot: 12
+            exp: 5
+
+        drops:
+          patata:
+            name: "Patata de la Suerte"
+            drop: POTATO
+            amount: 1
+            class: "epico"
+            weight: 90.0
+            slot: 14
+            exp: 2
+          patata_densa:
+            name: "Patata de la Suerte Densa"
+            drop: YELLOW_CONCRETE
+            amount: 1
+            class: "legendario"
+            weight: 10.0
+            slot: 14
+            exp: 5
+
+        drops:
+          remolacha:
+            name: "Remolacha Sangrienta"
+            drop: BEETROOT
+            amount: 1
+            class: "legendario"
+            weight: 90.0
+            slot: 16
+            exp: 8
+          remolacha_densa:
+            name: "Remolacha Sangrienta Densa"
+            drop: RED_CONCRETE
+            amount: 1
+            class: "exotico"
+            weight: 10.0
+            slot: 16
+            exp: 10
+
+        drops:
+          roble:
+            name: "Madera de Roble"
+            drop: OAK_LOG
+            class: "comun"
+            amount: 1
+            weight: 90.0
+            slot: 10
+            exp: 2
+          roble_denso:
+            name: "Madera de Roble Densa"
+            drop: OAK_WOOD
+            class: "especial"
+            amount: 1
+            weight: 10.0
+            slot: 10
+            exp: 10
