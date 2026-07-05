@@ -21,6 +21,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 public class LogbookGUI {
 
     private static final String KEY_BIOME_ID = "skyworld_biome_id";
+    // Mapa para controlar las tareas de animación activas por jugador
+    private static final Map<UUID, BukkitTask> activeTasks = new HashMap<>();
 
     private static Component parse(String text) {
         return ColorUtils.format(text);
@@ -68,6 +72,9 @@ public class LogbookGUI {
             case GLOBAL -> renderGlobalStats(inv, playerData, zoneManager);
         }
         player.openInventory(inv);
+
+        // INICIAMOS LA TAREA DE ANIMACIÓN AL ABRIR EL INVENTARIO GLOBAL
+        startAnimationTask(player, inv);
     }
 
     private static void openMiningBiomeView(Player player, MiningBiome biome, PlayerData data) {
@@ -90,6 +97,9 @@ public class LogbookGUI {
         }
         addBackButton(inv);
         player.openInventory(inv);
+
+        // INICIAMOS LA TAREA DE ANIMACIÓN AL ABRIR LA VISTA DE BIOMA
+        startAnimationTask(player, inv);
     }
 
     private static void openFarmBiomeView(Player player, FarmBiome biome, PlayerData data) {
@@ -112,6 +122,7 @@ public class LogbookGUI {
         }
         addBackButton(inv);
         player.openInventory(inv);
+        startAnimationTask(player, inv);
     }
 
     private static void openForagingBiomeView(Player player, ForagingBiome biome, PlayerData data) {
@@ -134,6 +145,7 @@ public class LogbookGUI {
         }
         addBackButton(inv);
         player.openInventory(inv);
+        startAnimationTask(player, inv);
     }
 
     private static void openFishingBiomeView(Player player, FishingBiome biome, PlayerData data) {
@@ -170,6 +182,92 @@ public class LogbookGUI {
         }
         addBackButton(inv);
         player.openInventory(inv);
+        startAnimationTask(player, inv);
+    }
+
+    // ==========================================
+    // LÓGICA DE ANIMACIÓN (TIMER / TRIGGER)
+    // ==========================================
+
+    private static void startAnimationTask(Player player, Inventory inv) {
+        // 1. Cancelar tarea anterior si existe para evitar duplicados
+        if (activeTasks.containsKey(player.getUniqueId())) {
+            activeTasks.get(player.getUniqueId()).cancel();
+        }
+
+        // 2. Crear nueva tarea
+        BukkitTask task = new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Validación de seguridad: si el inventario se cerró o cambió
+                if (player.getOpenInventory().getTopInventory() != inv) {
+                    this.cancel();
+                    activeTasks.remove(player.getUniqueId());
+                    return;
+                }
+
+                // Recorremos los items
+                for (ItemStack item : inv.getContents()) {
+                    if (item == null || !item.hasItemMeta()) continue;
+
+                    ItemMeta meta = item.getItemMeta();
+                    var pdc = meta.getPersistentDataContainer();
+
+                    // Comprobamos si tiene datos de rareza guardados
+                    if (pdc.has(Skyworld.getKey("rarity"), PersistentDataType.STRING)) {
+                        String rarityName = pdc.get(Skyworld.getKey("rarity"), PersistentDataType.STRING);
+                        String originalName = pdc.get(Skyworld.getKey("original_name"), PersistentDataType.STRING);
+
+                        try {
+                            Rarity rarity = Rarity.valueOf(rarityName);
+                            // Solo actualizamos si es una rareza animada para ahorrar recursos
+                            if (isAnimatedRarity(rarity) && originalName != null) {
+                                // Calculamos el nuevo componente con la fase actual del gradiente
+                                meta.displayName(ColorUtils.getAnimatedName(originalName, rarity));
+                                item.setItemMeta(meta);
+                            }
+                        } catch (Exception ignored) { }
+                    }
+                }
+            }
+        }.runTaskTimer(Skyworld.getInstance(), 1L, 3L); // Actualizar cada 2 ticks (100ms)
+
+        activeTasks.put(player.getUniqueId(), task);
+    }
+
+    private static boolean isAnimatedRarity(Rarity rarity) {
+        String n = rarity.name().toUpperCase();
+        return n.equals("LEGENDARIO") || n.equals("EXOTICO") || n.equals("MYTHIC");
+    }
+
+    // ==========================================
+    // CREACIÓN DE ITEMS
+    // ==========================================
+
+    private static ItemStack createDiscoveryIcon(boolean discovered, Material mat, String rawName, Rarity rarity, List<Component> loreLines) {
+        ItemStack item = new ItemStack(discovered ? mat : Material.GRAY_DYE);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            if (discovered) {
+                // Establecemos el nombre inicial (ya sea estático o el primer frame de la animación)
+                meta.displayName(ColorUtils.getAnimatedName(rawName, rarity));
+
+                // GUARDAMOS LOS DATOS NECESARIOS PARA LA ANIMACIÓN FUTURA
+                meta.getPersistentDataContainer().set(Skyworld.getKey("rarity"), PersistentDataType.STRING, rarity.name());
+                meta.getPersistentDataContainer().set(Skyworld.getKey("original_name"), PersistentDataType.STRING, rawName);
+
+                List<Component> lore = new ArrayList<>(loreLines);
+                lore.add(Component.empty());
+                lore.add(parse("&8&o✔ Ya descubierto"));
+                meta.lore(lore);
+            } else {
+                meta.displayName(parse("&c???"));
+                meta.lore(List.of(parse("&7Sigue explorando para desbloquear...")));
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private static void renderBiomeSelection(Inventory inv, java.util.Collection<?> biomes, PlayerData data) {
@@ -201,27 +299,6 @@ public class LogbookGUI {
             if (slot >= 44) break;
         }
         addBackButton(inv);
-    }
-
-    private static ItemStack createDiscoveryIcon(boolean discovered, Material mat, String rawName, Rarity rarity, List<Component> loreLines) {
-        ItemStack item = new ItemStack(discovered ? mat : Material.GRAY_DYE);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            if (discovered) {
-                meta.displayName(rarity.format(rawName));
-
-                List<Component> lore = new ArrayList<>(loreLines);
-                lore.add(Component.empty());
-                lore.add(parse("&8&o✔ Ya descubierto"));
-                meta.lore(lore);
-            } else {
-                meta.displayName(parse("&c???"));
-                meta.lore(List.of(parse("&7Sigue explorando para desbloquear...")));
-            }
-            item.setItemMeta(meta);
-        }
-        return item;
     }
 
     private static void renderGlobalStats(Inventory inv, PlayerData data, Fortcraft.skyworld.managers.ZoneManager zm) {
