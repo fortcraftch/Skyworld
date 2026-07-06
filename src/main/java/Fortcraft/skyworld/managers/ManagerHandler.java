@@ -27,6 +27,8 @@ public class ManagerHandler {
     private MenuManager menuManager;
     private NavigationManager navigationManager;
     private QuestManager questManager;
+    private StorageManager storageManager;
+
 
     public void loadManagers() {
         mobDisplayManager = new MobDisplayManager();
@@ -44,8 +46,9 @@ public class ManagerHandler {
         menuManager = new MenuManager();
         navigationManager = new NavigationManager();
         questManager = new QuestManager();
-        StorageManager storageManager = new StorageManager();
+        storageManager = new StorageManager();
         RespawnManager respawnManager = new RespawnManager(zoneManager);
+        MenuAnimationManager menuAnimationManager = new MenuAnimationManager();
 
         managers.add(mobDisplayManager);
         managers.add(zoneManager);
@@ -64,6 +67,7 @@ public class ManagerHandler {
         managers.add(questManager);
         managers.add(storageManager);
         managers.add(respawnManager);
+        managers.add(menuAnimationManager);
 
         managers.forEach(Manager::load);
 
@@ -114,6 +118,8 @@ public class ManagerHandler {
     public NavigationManager getNavigationManager() { return navigationManager; }
 
     public QuestManager getQuestManager() { return questManager; }
+
+    public StorageManager getStorageManager() { return storageManager;}
 
 }
 

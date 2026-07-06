@@ -8,8 +8,10 @@ import Fortcraft.skyworld.fishing.FishingBiome;
 import Fortcraft.skyworld.fishing.FishingDrop;
 import Fortcraft.skyworld.foraging.ForagingBiome;
 import Fortcraft.skyworld.foraging.ForagingDrop;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.mining.MiningBiome;
 import Fortcraft.skyworld.mining.MiningDrop;
+import Fortcraft.skyworld.utils.AnimatedHolder;
 import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.utils.Rarity;
@@ -31,7 +33,6 @@ import java.util.stream.Collectors;
 public class LogbookGUI {
 
     private static final String KEY_BIOME_ID = "skyworld_biome_id";
-    // Mapa para controlar las tareas de animación activas por jugador
     private static final Map<UUID, BukkitTask> activeTasks = new HashMap<>();
 
     private static Component parse(String text) {
@@ -61,7 +62,7 @@ public class LogbookGUI {
             }
         }
 
-        Inventory inv = Bukkit.createInventory(null, 54, parse(titleString));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse(titleString));
 
         switch (mode) {
             case FISHING -> renderBiomeSelection(inv, zoneManager.getAllFishingBiomes(), playerData);
@@ -72,53 +73,83 @@ public class LogbookGUI {
             case GLOBAL -> renderGlobalStats(inv, playerData, zoneManager);
         }
         player.openInventory(inv);
-
-        // INICIAMOS LA TAREA DE ANIMACIÓN AL ABRIR EL INVENTARIO GLOBAL
         startAnimationTask(player, inv);
     }
 
     private static void openMiningBiomeView(Player player, MiningBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(null, 54, parse("<gray>Capa: " + biome.getDisplayName()));
-        Map<Material, List<MiningDrop>> groupedBySource = biome.getAllDrops().stream().collect(Collectors.groupingBy(MiningDrop::getSource));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Capa: " + biome.getDisplayName()));
 
-        for (Map.Entry<Material, List<MiningDrop>> entry : groupedBySource.entrySet()) {
+        Map<Material, List<MiningDrop>> groupedBySource = biome.getAllDrops().stream()
+                .collect(Collectors.groupingBy(MiningDrop::getSource));
+
+        List<Map.Entry<Material, List<MiningDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
+            var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
+            Rarity r1 = t1 != null ? Rarity.fromString(t1.rarity()) : Rarity.COMUN;
+            Rarity r2 = t2 != null ? Rarity.fromString(t2.rarity()) : Rarity.COMUN;
+            return Integer.compare(r1.ordinal(), r2.ordinal());
+        });
+
+        int slot = 10;
+        for (Map.Entry<Material, List<MiningDrop>> entry : sortedEntries) {
             List<MiningDrop> blockDrops = entry.getValue();
             MiningDrop primary = blockDrops.getFirst();
             double totalWeight = blockDrops.stream().mapToDouble(MiningDrop::getWeight).sum();
 
+            var template = ItemRegistry.getDropTemplates().get(primary.itemId());
+            Material displayMat = primary.getSource();
+            Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             ItemStack icon = createDiscoveryIcon(
                     data.hasDiscovered(getCleanId(primary.getName())),
-                    primary.getSource(),
+                    displayMat,
                     primary.getName(),
-                    primary.getRarity(),
+                    rarity,
                     getLoreMining(blockDrops, totalWeight)
             );
-            inv.setItem(primary.getSlot(), icon);
+            inv.setItem(slot++, icon);
+            if ((slot % 9) == 8) slot += 2;
         }
         addBackButton(inv);
         player.openInventory(inv);
-
-        // INICIAMOS LA TAREA DE ANIMACIÓN AL ABRIR LA VISTA DE BIOMA
         startAnimationTask(player, inv);
     }
 
     private static void openFarmBiomeView(Player player, FarmBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(null, 54, parse("<gray>Cultivos: " + biome.getDisplayName()));
-        Map<Material, List<FarmDrop>> groupedBySource = biome.getAllDrops().stream().collect(Collectors.groupingBy(FarmDrop::getSourceBlock));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Cultivos: " + biome.getDisplayName()));
 
-        for (Map.Entry<Material, List<FarmDrop>> entry : groupedBySource.entrySet()) {
+        Map<Material, List<FarmDrop>> groupedBySource = biome.getAllDrops().stream()
+                .collect(Collectors.groupingBy(FarmDrop::getSourceBlock));
+
+        List<Map.Entry<Material, List<FarmDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
+            var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
+            Rarity r1 = t1 != null ? Rarity.fromString(t1.rarity()) : Rarity.COMUN;
+            Rarity r2 = t2 != null ? Rarity.fromString(t2.rarity()) : Rarity.COMUN;
+            return Integer.compare(r1.ordinal(), r2.ordinal());
+        });
+
+        int slot = 10;
+        for (Map.Entry<Material, List<FarmDrop>> entry : sortedEntries) {
             List<FarmDrop> cropDrops = entry.getValue();
             FarmDrop primary = cropDrops.getFirst();
             double totalWeight = cropDrops.stream().mapToDouble(FarmDrop::getWeight).sum();
 
+            var template = ItemRegistry.getDropTemplates().get(primary.itemId());
+            Material displayMat = template != null ? template.material() : primary.getSourceBlock();
+            Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             ItemStack icon = createDiscoveryIcon(
                     data.hasDiscovered(getCleanId(primary.getName())),
-                    primary.getDropItem(),
+                    displayMat,
                     primary.getName(),
-                    primary.getRarity(),
+                    rarity,
                     getLoreFarm(cropDrops, totalWeight)
             );
-            inv.setItem(primary.getSlot(), icon);
+            inv.setItem(slot++, icon);
+            if ((slot % 9) == 8) slot += 2;
         }
         addBackButton(inv);
         player.openInventory(inv);
@@ -126,22 +157,39 @@ public class LogbookGUI {
     }
 
     private static void openForagingBiomeView(Player player, ForagingBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(null, 54, parse("<gray>Árboles: " + biome.getDisplayName()));
-        Map<Material, List<ForagingDrop>> groupedBySource = biome.getAllDrops().stream().collect(Collectors.groupingBy(ForagingDrop::getSourceMaterial));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Árboles: " + biome.getDisplayName()));
 
-        for (Map.Entry<Material, List<ForagingDrop>> entry : groupedBySource.entrySet()) {
+        Map<Material, List<ForagingDrop>> groupedBySource = biome.getAllDrops().stream()
+                .collect(Collectors.groupingBy(ForagingDrop::getSourceMaterial));
+
+        List<Map.Entry<Material, List<ForagingDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
+            var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
+            Rarity r1 = t1 != null ? Rarity.fromString(t1.rarity()) : Rarity.COMUN;
+            Rarity r2 = t2 != null ? Rarity.fromString(t2.rarity()) : Rarity.COMUN;
+            return Integer.compare(r1.ordinal(), r2.ordinal());
+        });
+
+        int slot = 10;
+        for (Map.Entry<Material, List<ForagingDrop>> entry : sortedEntries) {
             List<ForagingDrop> treeDrops = entry.getValue();
             ForagingDrop primary = treeDrops.getFirst();
             double totalWeight = treeDrops.stream().mapToDouble(ForagingDrop::getWeight).sum();
 
+            var template = ItemRegistry.getDropTemplates().get(primary.itemId());
+            Material displayMat = primary.getSourceMaterial();
+            Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             ItemStack icon = createDiscoveryIcon(
                     data.hasDiscovered(getCleanId(primary.getName())),
-                    primary.getSourceMaterial(),
+                    displayMat,
                     primary.getName(),
-                    primary.getRarity(),
+                    rarity,
                     getLoreForaging(treeDrops, totalWeight)
             );
-            inv.setItem(primary.getSlot(), icon);
+            inv.setItem(slot++, icon);
+            if ((slot % 9) == 8) slot += 2;
         }
         addBackButton(inv);
         player.openInventory(inv);
@@ -149,80 +197,97 @@ public class LogbookGUI {
     }
 
     private static void openFishingBiomeView(Player player, FishingBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(null, 54, parse("<gray>Bioma: " + biome.getDisplayName()));
-        Map<String, List<FishingDrop>> groupedDrops = biome.getDrops().stream()
-                .collect(Collectors.groupingBy(FishingDrop::getGroupId, LinkedHashMap::new, Collectors.toList()));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Bioma: " + biome.getDisplayName()));
 
-        for (Map.Entry<String, List<FishingDrop>> entry : groupedDrops.entrySet()) {
+        Map<String, List<FishingDrop>> groupedDrops = biome.getDrops().stream()
+                .collect(Collectors.groupingBy(FishingDrop::getGroupId));
+
+        List<Map.Entry<String, List<FishingDrop>>> sortedEntries = new ArrayList<>(groupedDrops.entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            Rarity r1 = e1.getValue().getFirst().getSpeciesRarity();
+            Rarity r2 = e2.getValue().getFirst().getSpeciesRarity();
+            return Integer.compare(r1.ordinal(), r2.ordinal());
+        });
+
+        int slot = 10;
+        for (Map.Entry<String, List<FishingDrop>> entry : sortedEntries) {
             List<FishingDrop> variants = entry.getValue();
             FishingDrop primary = variants.getFirst();
-            boolean groupDiscovered = data.hasDiscovered(primary.getGroupId());
+
+            String cleanGroupId = getCleanId(primary.getGroupId());
+
+            // Un grupo está descubierto si el ID de grupo está registrado, o si se ha pescado al menos una variante.
+            boolean groupDiscovered = data.hasDiscovered(cleanGroupId)
+                    || variants.stream().anyMatch(v -> data.hasDiscovered(getCleanId(v.getItemId())));
+
+            String fishName = primary.getName();
 
             List<Component> details = new ArrayList<>();
-            details.add(parse("&8Especie: &7" + primary.getGroupId()));
             details.add(Component.empty());
             details.add(parse("&fPesajes registrados:"));
 
             for (FishingDrop var : variants) {
-                boolean varDiscovered = data.hasDiscovered(getCleanId(var.getId()));
+                boolean varDiscovered = data.hasDiscovered(getCleanId(var.getItemId()));
                 String prefix = varDiscovered ? " &2✔ &a" : " &8✘ &7";
-                String internalName = var.getId().substring(var.getId().lastIndexOf("_") + 1);
-                internalName = internalName.substring(0, 1).toUpperCase() + internalName.substring(1);
-                details.add(parse(prefix + internalName));
+
+                String sizeLabel = switch (var.getSize().toUpperCase()) {
+                    case "S" -> "Pequeño";
+                    case "M" -> "Mediano";
+                    case "L" -> "Grande";
+                    case "XL" -> "Gigante";
+                    default -> "Único";
+                };
+
+                if (!var.getSize().isEmpty()) {
+                    details.add(parse(prefix + sizeLabel + " &7(" + var.getSize() + ")"));
+                } else {
+                    details.add(parse(prefix + sizeLabel));
+                }
             }
 
             ItemStack icon = createDiscoveryIcon(
                     groupDiscovered,
                     primary.getMaterial(),
-                    primary.getName(),
+                    fishName, // BUG 1: Aplicado también al nombre principal del Icono interactivo
                     primary.getSpeciesRarity(),
                     details
             );
-            inv.setItem(primary.getSlot(), icon);
+
+            inv.setItem(slot++, icon);
+            if ((slot % 9) == 8) slot += 2;
         }
         addBackButton(inv);
         player.openInventory(inv);
         startAnimationTask(player, inv);
     }
 
-    // ==========================================
-    // LÓGICA DE ANIMACIÓN (TIMER / TRIGGER)
-    // ==========================================
-
     private static void startAnimationTask(Player player, Inventory inv) {
-        // 1. Cancelar tarea anterior si existe para evitar duplicados
         if (activeTasks.containsKey(player.getUniqueId())) {
             activeTasks.get(player.getUniqueId()).cancel();
         }
 
-        // 2. Crear nueva tarea
         BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                // Validación de seguridad: si el inventario se cerró o cambió
                 if (player.getOpenInventory().getTopInventory() != inv) {
                     this.cancel();
                     activeTasks.remove(player.getUniqueId());
                     return;
                 }
 
-                // Recorremos los items
                 for (ItemStack item : inv.getContents()) {
                     if (item == null || !item.hasItemMeta()) continue;
 
                     ItemMeta meta = item.getItemMeta();
                     var pdc = meta.getPersistentDataContainer();
 
-                    // Comprobamos si tiene datos de rareza guardados
                     if (pdc.has(Skyworld.getKey("rarity"), PersistentDataType.STRING)) {
                         String rarityName = pdc.get(Skyworld.getKey("rarity"), PersistentDataType.STRING);
                         String originalName = pdc.get(Skyworld.getKey("original_name"), PersistentDataType.STRING);
 
                         try {
                             Rarity rarity = Rarity.valueOf(rarityName);
-                            // Solo actualizamos si es una rareza animada para ahorrar recursos
                             if (isAnimatedRarity(rarity) && originalName != null) {
-                                // Calculamos el nuevo componente con la fase actual del gradiente
                                 meta.displayName(ColorUtils.getAnimatedName(originalName, rarity));
                                 item.setItemMeta(meta);
                             }
@@ -230,7 +295,7 @@ public class LogbookGUI {
                     }
                 }
             }
-        }.runTaskTimer(Skyworld.getInstance(), 1L, 3L); // Actualizar cada 2 ticks (100ms)
+        }.runTaskTimer(Skyworld.getInstance(), 1L, 3L);
 
         activeTasks.put(player.getUniqueId(), task);
     }
@@ -240,20 +305,14 @@ public class LogbookGUI {
         return n.equals("LEGENDARIO") || n.equals("EXOTICO") || n.equals("MYTHIC");
     }
 
-    // ==========================================
-    // CREACIÓN DE ITEMS
-    // ==========================================
-
     private static ItemStack createDiscoveryIcon(boolean discovered, Material mat, String rawName, Rarity rarity, List<Component> loreLines) {
         ItemStack item = new ItemStack(discovered ? mat : Material.GRAY_DYE);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
             if (discovered) {
-                // Establecemos el nombre inicial (ya sea estático o el primer frame de la animación)
                 meta.displayName(ColorUtils.getAnimatedName(rawName, rarity));
 
-                // GUARDAMOS LOS DATOS NECESARIOS PARA LA ANIMACIÓN FUTURA
                 meta.getPersistentDataContainer().set(Skyworld.getKey("rarity"), PersistentDataType.STRING, rarity.name());
                 meta.getPersistentDataContainer().set(Skyworld.getKey("original_name"), PersistentDataType.STRING, rawName);
 
@@ -302,8 +361,8 @@ public class LogbookGUI {
     }
 
     private static void renderGlobalStats(Inventory inv, PlayerData data, Fortcraft.skyworld.managers.ZoneManager zm) {
-        long fishTotal = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getName())).distinct().count();
-        long fishDiscovered = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getName())).distinct().filter(data::hasDiscovered).count();
+        long fishTotal = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getGroupId())).distinct().count();
+        long fishDiscovered = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getGroupId())).distinct().filter(data::hasDiscovered).count();
         inv.setItem(19, createInfoIcon(Material.FISHING_ROD, "&bPesca", "&7Especies: &f" + fishDiscovered + "/" + fishTotal));
 
         long mineTotal = zm.getAllMiningBiomes().stream().flatMap(b -> b.getUniqueSourceIds().stream()).distinct().count();
@@ -353,8 +412,12 @@ public class LogbookGUI {
         details.add(parse("&7Posibles drops:"));
         for (MiningDrop d : blockDrops) {
             double chance = (d.getWeight() / totalWeight) * 100;
+            var template = ItemRegistry.getDropTemplates().get(d.itemId());
+            String dName = template != null ? template.displayName() : d.itemId();
+            Rarity dRarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             details.add(parse(" &8• ")
-                    .append(d.getRarity().format(d.getDropName()))
+                    .append(dRarity.format(dName))
                     .append(parse(" &7x" + d.getAmount() + " &f" + String.format("%.1f", chance) + "%")));
         }
         return details;
@@ -367,8 +430,12 @@ public class LogbookGUI {
         details.add(parse("&7Posibles drops:"));
         for (FarmDrop d : cropDrops) {
             double chance = (d.getWeight() / totalWeight) * 100;
+            var template = ItemRegistry.getDropTemplates().get(d.itemId());
+            String dName = template != null ? template.displayName() : d.itemId();
+            Rarity dRarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             details.add(parse(" &8• ")
-                    .append(d.getRarity().format(d.getDropName()))
+                    .append(dRarity.format(dName))
                     .append(parse(" &7x" + d.getAmount() + " &f" + String.format("%.1f", chance) + "%")));
         }
         return details;
@@ -381,8 +448,12 @@ public class LogbookGUI {
         details.add(parse("&7Posibles drops:"));
         for (ForagingDrop d : treeDrops) {
             double chance = (d.getWeight() / totalWeight) * 100;
+            var template = ItemRegistry.getDropTemplates().get(d.itemId());
+            String dName = template != null ? template.displayName() : d.itemId();
+            Rarity dRarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
             details.add(parse(" &8• ")
-                    .append(d.getRarity().format(d.getDropName()))
+                    .append(dRarity.format(dName))
                     .append(parse(" &7x" + d.getAmount() + " &f" + String.format("%.1f", chance) + "%")));
         }
         return details;
@@ -390,9 +461,9 @@ public class LogbookGUI {
 
     public static String getCleanId(String text) {
         if (text == null) return "";
-        return text.replaceAll("<[^>]*>", "") // Quita tags de MiniMessage <blue>
-                .replaceAll("§[0-9a-fklmnorx]", "") // Quita colores legacy y hex §x
-                .replace("&", "") // Quita símbolos & sueltos
+        return text.replaceAll("<[^>]*>", "")
+                .replaceAll("§[0-9a-fklmnorx]", "")
+                .replace("&", "")
                 .trim();
     }
 

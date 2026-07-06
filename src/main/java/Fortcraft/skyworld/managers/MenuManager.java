@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.listeners.MenuListener;
 import Fortcraft.skyworld.menu.MenuItem;
 import Fortcraft.skyworld.menu.SkyblockMenu;
@@ -61,9 +62,27 @@ public class MenuManager implements Manager {
                     String action = itemsSection.getString(slotStr + ".action", "NONE");
                     String target = itemsSection.getString(slotStr + ".target-item", "");
                     int amount = itemsSection.getInt(slotStr + ".amount", 1);
-                    double price = itemsSection.getDouble(slotStr + ".price", 0.0);
+                    double menuPriceModifier = itemsSection.getDouble(slotStr + ".price", 0.0);
 
-                    menu.addItem(new MenuItem(slot, mat, name, lore, action, target, amount, price));
+                    double finalPrice = 0.0;
+
+                    if (!target.isEmpty()) {
+                        var template = ItemRegistry.getDropTemplates().get(target.toLowerCase());
+                        if (template != null) {
+                            Map<String, Double> customStats = template.customStats();
+                            double basePrice = action.equalsIgnoreCase("SELL") ? customStats.get("sell_price").intValue() : customStats.get("buy_price").intValue();
+
+                            finalPrice = (basePrice * amount) + menuPriceModifier;
+
+                            if (finalPrice < 0) finalPrice = 0.0; // Evitamos precios negativos accidentales
+                        } else {
+                            // Fallback si el ítem no está en ItemRegistry (ej: un ítem vanilla genérico)
+                            finalPrice = menuPriceModifier;
+                        }
+                    } else {
+                        finalPrice = menuPriceModifier;
+                    }
+                    menu.addItem(new MenuItem(slot, mat, name, lore, action, target, amount, finalPrice));
                 }
             }
             menus.put(menuId, menu);

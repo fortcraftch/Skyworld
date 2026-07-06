@@ -2,6 +2,7 @@ package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.foraging.ForagingDrop;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.zones.ForagingZone;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -40,7 +41,10 @@ public class ForagingManager implements Manager {
     public boolean handleBreak(Player p, Block block, ForagingZone zone) {
         // 1. Obtenemos un drop aleatorio basado en pesos desde el bioma
         ForagingDrop drop = zone.getBiome().getWeightedDrop(block.getType());
+
         if (drop == null) return false;
+
+        var template = ItemRegistry.getDropTemplates().get(drop.itemId());
 
         Set<Block> targetTree;
 
@@ -56,6 +60,15 @@ public class ForagingManager implements Manager {
         }
 
         drop.giveToStorage(p);
+
+        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
+        if (template != null && template.customStats() != null) {
+            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
+            if (expGiven > 0) {
+                p.giveExp((int) expGiven);
+            }
+        }
+
         block.setType(Material.AIR, false);
         scheduleTreeRegen(targetTree, drop);
 

@@ -1,18 +1,16 @@
 package Fortcraft.skyworld.items;
 
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
 import java.util.List;
 import java.util.Map;
 
-public record CustomItemData(
+public record CustomDropData(
         String id,
         Material material,
         String displayName,
         List<String> lore,
-        String category, // WEAPON, TOOL, CONSUMABLE
         String rarity,
-        Map<Attribute, Double> stats,
+        String category,
         Map<String, Double> customStats,
         boolean isEquipment
 ) {}

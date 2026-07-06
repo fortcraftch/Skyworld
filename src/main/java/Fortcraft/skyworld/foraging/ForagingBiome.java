@@ -4,7 +4,6 @@ import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -20,7 +19,7 @@ public class ForagingBiome {
     private final Material icon;
     private final String displayName;
 
-    // Cambiado a lista para soportar múltiples drops por tronco
+    // Mapa de listas para soportar múltiples drops por tronco/bloque de madera
     private final Map<Material, List<ForagingDrop>> drops = new HashMap<>();
     private final Set<String> uniqueSourceIds = new HashSet<>();
 
@@ -41,14 +40,22 @@ public class ForagingBiome {
                 List<ForagingDrop> blockDrops = new ArrayList<>();
                 ConfigurationSection dropsListSec = blockSec.getConfigurationSection("drops");
 
+                // Mapeo adaptado al nuevo sistema global sin duplicación de atributos visuales
                 if (dropsListSec != null) {
                     for (String dropId : dropsListSec.getKeys(false)) {
                         ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
 
-                        ForagingDrop drop = ForagingDrop.fromConfig(
+                        // El dropId o un item_id explícito define el vínculo con drops.yml
+                        String itemId = singleDropSec.getString("item_id", dropId);
+                        double weight = singleDropSec.getDouble("weight", 10.0);
+                        int amount = singleDropSec.getInt("amount", 1);
+
+                        ForagingDrop drop = new ForagingDrop(
                                 sourceMat,
                                 sourceName,
-                                singleDropSec,
+                                itemId,
+                                weight,
+                                amount,
                                 defRegen
                         );
                         blockDrops.add(drop);

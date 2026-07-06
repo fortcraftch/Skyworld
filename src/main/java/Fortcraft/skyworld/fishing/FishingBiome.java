@@ -4,7 +4,6 @@ import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.Rarity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -28,7 +27,7 @@ public class FishingBiome {
         this.displayName = config.getString("display_name", id);
         this.icon = Material.valueOf(config.getString("icon", "WATER_BUCKET"));
 
-        loadDrops(config.getConfigurationSection("drops"));
+        loadDrops(config.getConfigurationSection("species"));
         calculateStats();
     }
 
@@ -36,45 +35,37 @@ public class FishingBiome {
         if (section == null) return;
         uniqueSourceIds.clear();
 
-        for (String key : section.getKeys(false)) {
-            ConfigurationSection dropSec = section.getConfigurationSection(key);
-            String baseName = dropSec.getString("name", key);
+        for (String groupKey : section.getKeys(false)) { // ej: "bacalao"
+            ConfigurationSection speciesSec = section.getConfigurationSection(groupKey);
+            String groupName = speciesSec.getString("name", groupKey);
 
-            Rarity speciesRarity = Rarity.fromString(dropSec.getString("class", "comun"));
+            uniqueSourceIds.add(groupKey);
 
-            uniqueSourceIds.add(key);
+            ConfigurationSection dropsSec = speciesSec.getConfigurationSection("drops");
+            if (dropsSec != null && !dropsSec.getKeys(false).isEmpty()) {
 
-            if (dropSec.contains("variants")) {
-                ConfigurationSection varSec = dropSec.getConfigurationSection("variants");
+                // 1. Escoger la rareza de la clase basándonos en el PRIMER drop registrado
+                String firstDropKey = dropsSec.getKeys(false).iterator().next();
+                String firstItemId = dropsSec.getConfigurationSection(firstDropKey).getString("item_id");
+                var firstTemplate = Fortcraft.skyworld.items.ItemRegistry.getDropTemplates().get(firstItemId);
+                Rarity speciesRarity = firstTemplate != null ? Rarity.fromString(firstTemplate.rarity()) : Rarity.COMUN;
 
-                for (String varKey : varSec.getKeys(false)) {
-                    ConfigurationSection v = varSec.getConfigurationSection(varKey);
-                    String sizeDisplayName = v.getString("display", varKey);
-
-                    drops.add(FishingDrop.fromConfig(
-                            key + "_" + varKey,
-                            key,
-                            baseName,
-                            sizeDisplayName,
-                            v,
-                            speciesRarity
-                    ));
+                // 2. Iterar sobre todos los tamaños (pesajes)
+                for (String dropKey : dropsSec.getKeys(false)) {
+                    ConfigurationSection variantSec = dropsSec.getConfigurationSection(dropKey);
+                    drops.add(FishingDrop.fromConfig(groupKey, groupName, speciesRarity, variantSec));
                 }
-            } else {
-                drops.add(FishingDrop.fromConfig(key, key, baseName, "", dropSec, speciesRarity));
             }
         }
     }
 
     private void calculateStats() {
         for (FishingDrop drop : drops) {
-            drop.prebuild(); // Aseguramos que el itemstack esté listo
             if (drop.getRarity() > maxRarity) maxRarity = drop.getRarity();
         }
     }
 
     public FishingDrop rollDrop(int rarityGoal) {
-        // 1. Intentar obtener ítems que coincidan exactamente con la rareza del minijuego
         List<FishingDrop> exactPool = new ArrayList<>();
         double totalWeight = 0;
 
@@ -105,8 +96,7 @@ public class FishingBiome {
 
         Map<Integer, Double> rarityWeights = new HashMap<>();
         for (FishingDrop drop : drops) {
-            rarityWeights.put(drop.getRarity(),
-                    rarityWeights.getOrDefault(drop.getRarity(), 0.0) + drop.getWeight());
+            rarityWeights.put(drop.getRarity(), rarityWeights.getOrDefault(drop.getRarity(), 0.0) + drop.getWeight());
         }
 
         double totalWeight = rarityWeights.values().stream().mapToDouble(Double::doubleValue).sum();
@@ -137,12 +127,10 @@ public class FishingBiome {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            // Usa tu ColorUtils aquí también
             meta.displayName(ColorUtils.format(getDisplayName())
                     .decoration(TextDecoration.ITALIC, false));
 
             List<Component> lore = new ArrayList<>();
-            // Usa ColorUtils.format para el lore también
             lore.add(ColorUtils.format("&7Descubiertos: &e" + discoveredCount + "/" + getTotalUniqueSources())
                     .decoration(TextDecoration.ITALIC, false));
 

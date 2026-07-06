@@ -1,408 +1,423 @@
-fishing_biomes:
-  lake:
-    display_name: "<gradient:#29CEDD:#334B9D>Lago Pacífico"
-    icon: WATER_BUCKET
-    drops:
-      Bacalao:
-        name: "Bacalao"
-        rarity: 1
-        class: "comun"
-        variants:
-          pequeño:
-            display: "★"
-            class: "raro"
-            material: COD
-            weight: 30.0
-            rarity: 1
-            slot: 10
-          mediano:
-            display: "★★"
-            class: "epico"
-            material: COD
-            weight: 15.0
-            rarity: 2
-            slot: 10
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: COD
-            weight: 5.0
-            rarity: 3
-            slot: 10
-      Salmón:
-        name: "Salmón"
-        rarity: 2
-        class: "especial"
-        variants:
-          pequeño:
-            display: "★"
-            class: "raro"
-            material: SALMON
-            weight: 30.0
-            rarity: 2
-            slot: 11
-          mediano:
-            display: "★★"
-            class: "epico"
-            material: SALMON
-            weight: 15.0
-            rarity: 3
-            slot: 11
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: SALMON
-            weight: 5.0
-            rarity: 4
-            slot: 11
-      Pez Tropical:
-        name: "Pez Tropical"
-        class: "raro"
-        rarity: 3
-        variants:
-          pequeño:
-            display: "★"
-            class: "raro"
-            material: TROPICAL_FISH
-            weight: 30.0
-            rarity: 3
-            slot: 12
-          mediano:
-            display: "★★"
-            class: "epico"
-            material: TROPICAL_FISH
-            weight: 15.0
-            rarity: 4
-            slot: 12
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: TROPICAL_FISH
-            weight: 5.0
-            rarity: 5
-            slot: 12
-      Pez Globo:
-        name: "Pez Globo"
-        class: "epico"
-        rarity: 4
-        variants:
-          pequeño:
-            display: "★"
-            class: "raro"
-            material: PUFFERFISH
-            weight: 30.0
-            rarity: 4
-            slot: 13
-          mediano:
-            display: "★★"
-            class: "epico"
-            material: PUFFERFISH
-            weight: 15.0
-            rarity: 5
-            slot: 13
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: PUFFERFISH
-            weight: 5.0
-            rarity: 6
-            slot: 13
-      Cascara de Nautilio:
-        name: "Cascara de Nautilio"
-        rarity: 5
-        class: "legendario"
-        variants:
-          pequeña:
-            display: "★"
-            class: "raro"
-            material: NAUTILUS_SHELL
-            weight: 30.0
-            rarity: 5
-            slot: 14
-          mediana:
-            display: "★★"
-            class: "epico"
-            material: NAUTILUS_SHELL
-            weight: 15.0
-            rarity: 6
-            slot: 14
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: NAUTILUS_SHELL
-            weight: 5.0
-            rarity: 7
-            slot: 14
-          gigante:
-            display: "★★★★"
-            class: "exotico"
-            material: NAUTILUS_SHELL
-            weight: 5.0
-            rarity: 8
-            slot: 14
+# --- DROPS DE MINERÍA ---
+diamond:
+  material: DIAMOND
+  name: "Diamante"
+  rarity: RARO
+  category: MINING
+  lore:
+    - "&7Un brillante extraído de las capas más oscuras."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
 
-  deep_ocean:
-    display_name: "<gradient:#29CEDD:#334B9D>Océano Profundo"
-    icon: PRISMARINE_SHARD
-    drops:
-      Bacalao:
-        name: "Bacalao"
-        class: "comun"
-        rarity: 1
-        variants:
-          grande:
-            display: "★★★"
-            class: "legendario"
-            material: COD
-            weight: 35.0
-            rarity: 3
-            slot: 10
-          gigante:
-            display: "★★★★"
-            class: "exotico"
-            material: COD
-            weight: 30.0
-            rarity: 4
-            slot: 10
-      Calamar Brillante:
-        material: GLOW_INK_SAC
-        name: "Calamar Brillante"
-        class: "exotico"
-        weight: 70
-        rarity: 11
-        slot: 11
+dense_diamond:
+  material: DIAMOND_BLOCK
+  name: "Diamante Denso"
+  rarity: EPICO
+  category: MINING
+  lore:
+    - "&7Una densa amalgama pura de diamante."
+  custom_stats:
+    sell_price: 900.0
+    buy_price: 100.0
+    exp_given: 100.0
 
-mining_biomes:
-  deep_caves:
-    display_name: "<gradient:#8F8888:#564D4D>Cuevas Profundas"
-    icon: DEEPSLATE_DIAMOND_ORE
-    blocks:
-      DEEPSLATE_DIAMOND_ORE:
-        name: "Diamante de Profundidad"
-        transform-to: DEEPSLATE
-        regen-time: 5
-        drops:
-          diamante:
-            name: "Diamante"
-            drop: DIAMOND
-            amount: 1
-            class: "raro"
-            weight: 90.0
-            slot: 13
-          diamante_denso:
-            name: "Diamante Denso"
-            drop: DIAMOND_BLOCK
-            amount: 1
-            class: "epico"
-            weight: 10.0
-            slot: 13
-      DEEPSLATE_IRON_ORE:
-        name: "Hierro de Profundidad"
-        transform-to: DEEPSLATE
-        regen-time: 3
-        drops:
-          hierro:
-            name: "Hierro"
-            drop: RAW_IRON
-            amount: 1
-            class: "especial"
-            weight: 90.0
-            slot: 12
-          hierro_denso:
-            name: "Hierro Denso"
-            drop: IRON_BLOCK
-            amount: 1
-            class: "raro"
-            weight: 10.0
-            slot: 12
-      DEEPSLATE:
-        name: "Piedra de Profundidad"
-        transform-to: BEDROCK
-        regen-time: 1
-        drops:
-          piedra:
-            name: "Piedra"
-            drop: COBBLESTONE
-            amount: 1
-            class: "comun"
-            weight: 90.0
-            slot: 11
-          piedra_densa:
-            name: "Piedra Densa"
-            drop: STONE
-            amount: 1
-            class: "especial"
-            weight: 10.0
-            slot: 11
-      STONE:
-        name: "Piedra"
-        transform-to: BEDROCK
-        regen-time: 1
-        drops:
-          piedra:
-            name: "Piedra"
-            drop: COBBLESTONE
-            amount: 1
-            class: "comun"
-            weight: 90.0
-            slot: 10
-          piedra_densa:
-            name: "Piedra Densa"
-            drop: STONE
-            amount: 1
-            class: "especial"
-            weight: 10.0
-            slot: 10
+iron:
+  material: RAW_IRON
+  name: "Hierro"
+  rarity: ESPECIAL
+  category: MINING
+  lore:
+    - "&7Mineral de hierro rico en sedimentos profundos."
+  custom_stats:
+    sell_price: 25.0
+    buy_price: 100.0
+    exp_given: 5.0
 
-  caves:
-    display_name: "<gradient:#8F8888:#564D4D>Cuevas"
-    icon: DIAMOND_ORE
-    blocks:
-      DIAMOND_ORE:
-        name: "Diamante"
-        transform-to: STONE
-        regen-time: 5
-        drops:
-          diamante:
-            name: "Diamante"
-            drop: DIAMOND
-            amount: 1
-            class: "raro"
-            weight: 90.0
-            slot: 12
-          diamante_denso:
-            name: "Diamante Denso"
-            drop: DIAMOND_BLOCK
-            amount: 1
-            class: "epico"
-            weight: 10.0
-            slot: 12
-      IRON_ORE:
-        name: "Hierro"
-        transform-to: STONE
-        regen-time: 3
-        drops:
-          hierro:
-            name: "Hierro"
-            drop: RAW_IRON
-            amount: 1
-            class: "especial"
-            weight: 90.0
-            slot: 11
-          hierro_denso:
-            name: "Hierro Denso"
-            drop: IRON_BLOCK
-            amount: 1
-            class: "raro"
-            weight: 10.0
-            slot: 11
-      STONE:
-        name: "Piedra"
-        transform-to: BEDROCK
-        regen-time: 1
-        drops:
-          piedra:
-            name: "Piedra"
-            drop: COBBLESTONE
-            amount: 1
-            class: "comun"
-            weight: 90.0
-            slot: 10
-          piedra_densa:
-            name: "Piedra Densa"
-            drop: STONE
-            amount: 1
-            class: "especial"
-            weight: 10.0
-            slot: 10
+dense_iron:
+  material: RAW_IRON_BLOCK
+  name: "Hierro Denso"
+  rarity: RARO
+  category: MINING
+  lore:
+    - "&7Hierro macizo y sumamente pesado."
+  custom_stats:
+    sell_price: 225.0
+    buy_price: 100.0
+    exp_given: 40.0
 
+stone:
+  material: STONE
+  name: "Piedra"
+  rarity: COMUN
+  category: MINING
+  lore:
+    - "&7Roca común extraída del subsuelo."
+  custom_stats:
+    sell_price: 1.0
+    buy_price: 100.0
+    exp_given: 1.0
 
-        drops:
-          trigo:
-            name: "Trigo Común"
-            drop: WHEAT
-            amount: 1
-            class: "comun"
-            weight: 90.0
-            slot: 10
-            exp: 2
-          trigo_denso:
-            name: "Trigo Común Denso"
-            drop: HAY_BLOCK
-            amount: 1
-            class: "especial"
-            weight: 10.0
-            slot: 10
-            exp: 5
+dense_stone:
+  material: STONE
+  name: "Piedra Densa"
+  rarity: ESPECIAL
+  category: MINING
+  lore:
+    - "&7Roca pulida de alta densidad estructural."
+  custom_stats:
+    sell_price: 10.0
+    buy_price: 100.0
+    exp_given: 8.0
 
-        drops:
-          zanahoria:
-            name: "Zanahoria Dulce"
-            drop: CARROT
-            amount: 1
-            class: "raro"
-            weight: 90.0
-            slot: 12
-            exp: 2
-          zanahoria_densa:
-            name: "Zanahoria Dulce Densa"
-            drop: ORANGE_CONCRETE
-            class: "epico"
-            amount: 1
-            weight: 10.0
-            slot: 12
-            exp: 5
+# --- DROPS DE AGRICULTURA ---
+common_wheat:
+  material: WHEAT
+  name: "Trigo Común"
+  rarity: COMUN
+  category: FARMING
+  lore:
+    - "&7Espiga dorada perfectamente cultivada."
+  custom_stats:
+    sell_price: 2.0
+    buy_price: 100.0
+    exp_given: 2.0
 
-        drops:
-          patata:
-            name: "Patata de la Suerte"
-            drop: POTATO
-            amount: 1
-            class: "epico"
-            weight: 90.0
-            slot: 14
-            exp: 2
-          patata_densa:
-            name: "Patata de la Suerte Densa"
-            drop: YELLOW_CONCRETE
-            amount: 1
-            class: "legendario"
-            weight: 10.0
-            slot: 14
-            exp: 5
+dense_common_wheat:
+  material: HAY_BLOCK
+  name: "Trigo Denso"
+  rarity: ESPECIAL
+  category: FARMING
+  lore:
+    - "&7Una paca apretada de cosechas selectas."
+  custom_stats:
+    sell_price: 20.0
+    buy_price: 100.0
+    exp_given: 5.0
 
-        drops:
-          remolacha:
-            name: "Remolacha Sangrienta"
-            drop: BEETROOT
-            amount: 1
-            class: "legendario"
-            weight: 90.0
-            slot: 16
-            exp: 8
-          remolacha_densa:
-            name: "Remolacha Sangrienta Densa"
-            drop: RED_CONCRETE
-            amount: 1
-            class: "exotico"
-            weight: 10.0
-            slot: 16
-            exp: 10
+sweet_carrot:
+  material: CARROT
+  name: "Zanahoria Dulce"
+  rarity: RARO
+  category: FARMING
+  lore:
+    - "&7Especialmente crujiente y de un tono naranja vivo."
+  custom_stats:
+    sell_price: 6.0
+    buy_price: 100.0
+    exp_given: 2.0
 
-        drops:
-          roble:
-            name: "Madera de Roble"
-            drop: OAK_LOG
-            class: "comun"
-            amount: 1
-            weight: 90.0
-            slot: 10
-            exp: 2
-          roble_denso:
-            name: "Madera de Roble Densa"
-            drop: OAK_WOOD
-            class: "especial"
-            amount: 1
-            weight: 10.0
-            slot: 10
-            exp: 10
+dense_sweet_carrot:
+  material: ORANGE_CONCRETE
+  name: "Zanahorias Densa"
+  rarity: EPICO
+  category: FARMING
+  lore:
+    - "&7Cargamento masivo listo para exportar."
+  custom_stats:
+    sell_price: 60.0
+    buy_price: 100.0
+    exp_given: 5.0
+
+lucky_potato:
+  material: POTATO
+  name: "Patata de la Suerte"
+  rarity: EPICO
+  category: FARMING
+  lore:
+    - "&7Dicen que llevar una encima atrae la fortuna."
+  custom_stats:
+    sell_price: 12.0
+    buy_price: 100.0
+    exp_given: 2.0
+
+dense_lucky_potato:
+  material: YELLOW_CONCRETE
+  name: "Patata Densa"
+  rarity: LEGENDARIO
+  category: FARMING
+  lore:
+    - "&7Selección premium de tubérculos bendecidos."
+  custom_stats:
+    sell_price: 120.0
+    buy_price: 100.0
+    exp_given: 5.0
+
+bloody_beetroot:
+  material: BEETROOT
+  name: "Remolacha Sangrienta"
+  rarity: LEGENDARIO
+  category: FARMING
+  lore:
+    - "&7Su color carmesí es casi místico e hipnótico."
+  custom_stats:
+    sell_price: 25.0
+    buy_price: 100.0
+    exp_given: 8.0
+
+dense_bloody_beetroot:
+  material: RED_CONCRETE
+  name: "Remolacha Densa"
+  rarity: EXOTICO
+  category: FARMING
+  lore:
+    - "&7Destilado puro y denso de remolachas reales."
+  custom_stats:
+    sell_price: 260.0
+    buy_price: 100.0
+    exp_given: 10.0
+
+# --- DROPS DE TALA (FORAGING) ---
+oak_timber:
+  material: OAK_LOG
+  name: "Madera de Roble"
+  rarity: COMUN
+  category: FORAGING
+  lore:
+    - "&7Leño firme extraído de árboles maduros."
+  custom_stats:
+    sell_price: 4.0
+    buy_price: 100.0
+    exp_given: 2.0
+
+dense_oak_timber:
+  material: OAK_WOOD
+  name: "Madera de Roble Densa"
+  rarity: ESPECIAL
+  category: FORAGING
+  lore:
+    - "&7Madera maciza sin imperfecciones en su corteza."
+  custom_stats:
+    sell_price: 45.0
+    buy_price: 100.0
+    exp_given: 10.0
+
+# --- DROPS DE PESCA (FISHING) ---
+
+# --- Bacalaos ---
+fishing_cod_small:
+  material: COD
+  name: "Bacalao"
+  rarity: COMUN
+  category: FISHING
+  lore:
+    - "&7Un ejemplar pequeño de bacalao."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 1
+fishing_cod_medium:
+  material: COD
+  name: "Bacalao"
+  rarity: COMUN
+  category: FISHING
+  lore:
+    - "&7Un bacalao de proporciones estándar."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 2
+fishing_cod_large:
+  material: COD
+  name: "Bacalao"
+  rarity: COMUN
+  category: FISHING
+  lore:
+    - "&7¡Vaya pieza! Bastante grande y pesado."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 3
+fishing_cod_giant:
+  material: COD
+  name: "Bacalao"
+  rarity: COMUN
+  category: FISHING
+  lore:
+    - "&7Un bacalao mítico de proporciones colosales."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 4
+
+# --- Salmones ---
+fishing_salmon_small:
+  material: SALMON
+  name: "Salmón"
+  rarity: ESPECIAL
+  category: FISHING
+  lore:
+    - "&7Un salmón joven capturado en corrientes bajas."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 1
+fishing_salmon_medium:
+  material: SALMON
+  name: "Salmón"
+  rarity: ESPECIAL
+  category: FISHING
+  lore:
+    - "&7Un salmón saludable de tamaño medio."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 2
+fishing_salmon_large:
+  material: SALMON
+  name: "Salmón"
+  rarity: ESPECIAL
+  category: FISHING
+  lore:
+    - "&7Un gran salmón brillante que luchó bastante."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 3
+
+# --- Peces Tropicales ---
+fishing_tropical_small:
+  material: TROPICAL_FISH
+  name: "Pez Tropical"
+  rarity: RARO
+  category: FISHING
+  lore:
+    - "&7Un pez pequeño de arrecife muy vistoso."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 1
+fishing_tropical_medium:
+  material: TROPICAL_FISH
+  name: "Pez Tropical"
+  rarity: RARO
+  category: FISHING
+  lore:
+    - "&7Un colorido espécimen tropical."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 2
+fishing_tropical_large:
+  material: TROPICAL_FISH
+  name: "Pez Tropical"
+  rarity: RARO
+  category: FISHING
+  lore:
+    - "&7Ejemplar exótico y brillante de arrecife profundo."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 3
+
+# --- Peces Globo ---
+fishing_puffer_small:
+  material: PUFFERFISH
+  name: "Pez Globo"
+  rarity: EPICO
+  category: FISHING
+  lore:
+    - "&7Un pequeño pez globo algo espinoso."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 1
+fishing_puffer_medium:
+  material: PUFFERFISH
+  name: "Pez Globo"
+  rarity: EPICO
+  category: FISHING
+  lore:
+    - "&7Pez globo inflado de tamaño regular."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 2
+fishing_puffer_large:
+  material: PUFFERFISH
+  name: "Pez Globo"
+  rarity: EPICO
+  category: FISHING
+  lore:
+    - "&7¡Cuidado! Un pez globo enorme cargado de toxinas."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 3
+
+# --- Náutilos ---
+fishing_nautilus_small:
+  material: NAUTILUS_SHELL
+  name: "Cascara de Nautilio"
+  rarity: LEGENDARIO
+  category: FISHING
+  lore:
+    - "&7Una concha espiral pequeña recuperada del fondo."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 1
+fishing_nautilus_medium:
+  material: NAUTILUS_SHELL
+  name: "Cascara de Nautilio"
+  rarity: LEGENDARIO
+  category: FISHING
+  lore:
+    - "&7Cáscara marina antigua de tamaño medio."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 2
+fishing_nautilus_large:
+  material: NAUTILUS_SHELL
+  name: "Cascara de Nautilio"
+  rarity: LEGENDARIO
+  category: FISHING
+  lore:
+    - "&7Una reliquia marina preciosa y bien conservada."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 3
+fishing_nautilus_giant:
+  material: NAUTILUS_SHELL
+  name: "Cascara de Nautilio"
+  rarity: LEGENDARIO
+  category: FISHING
+  lore:
+    - "&7Fósil de náutilo gigante, una antigüedad invaluable."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0
+    size: 4
+
+# --- Especiales ---
+fishing_glow_squid:
+  material: GLOW_INK_SAC
+  name: "Calamar Brillante"
+  rarity: EXOTICO
+  category: FISHING
+  lore:
+    - "&7Restos bioluminiscentes de las profundidades abisales."
+  custom_stats:
+    sell_price: 100.0
+    buy_price: 100.0
+    exp_given: 15.0

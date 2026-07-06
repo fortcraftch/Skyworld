@@ -1,6 +1,6 @@
 npcs:
   merchant_blocks:
-    name: "<yellow>Comerciante de Bloques"
+    name: "<gradient:#29CEDD:#334B9D>Comerciante de Bloques"
     type: VILLAGER
     menu: SHOP_BLOCKS
     location:

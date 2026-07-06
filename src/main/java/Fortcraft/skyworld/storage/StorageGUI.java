@@ -1,5 +1,6 @@
 package Fortcraft.skyworld.storage;
 
+import Fortcraft.skyworld.utils.AnimatedHolder;
 import Fortcraft.skyworld.utils.PlayerMode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -30,7 +31,7 @@ public class StorageGUI {
 
         Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(titleString);
 
-        Inventory inv = Bukkit.createInventory(null, INV_SIZE, titleComponent);
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), INV_SIZE, titleComponent);
         Map<String, StorageBag.StorageItemData> rawItems = bag.getItemsForMode(mode);
 
         fillInventoryWithPage(inv, rawItems, page);
@@ -107,14 +108,34 @@ public class StorageGUI {
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
 
-            meta.getPersistentDataContainer().set(
+            var pdc = meta.getPersistentDataContainer();
+
+            // ID del item para la lógica del almacenamiento
+            pdc.set(
                     new org.bukkit.NamespacedKey("fortcraft", "storage_id"),
                     PersistentDataType.STRING,
                     data.getDisplayName()
             );
+
+            String cleanName = stripColorCodes(data.getDisplayName());
+
+            pdc.set(Fortcraft.skyworld.Skyworld.getKey("rarity"), PersistentDataType.STRING, data.getRarity().name());
+            pdc.set(Fortcraft.skyworld.Skyworld.getKey("original_name"), PersistentDataType.STRING, cleanName);
+
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    /**
+     * Helper para limpiar los prefijos de color y aislar el nombre base del ítem
+     */
+    private static String stripColorCodes(String text) {
+        if (text == null) return "";
+        return text.replaceAll("<[^>]*>", "") // Remueve tags MiniMessage
+                .replaceAll("§[0-9a-fklmnorx]", "") // Remueve colores legacy
+                .replace("&", "")
+                .trim();
     }
 
     private static int calculateMaxPages(Map<String, StorageBag.StorageItemData> rawItems) {

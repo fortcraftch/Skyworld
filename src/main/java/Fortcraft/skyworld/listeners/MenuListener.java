@@ -2,13 +2,16 @@ package Fortcraft.skyworld.listeners;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.managers.EconomyManager;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.menu.LoadoutGUI;
 import Fortcraft.skyworld.menu.MenuItem;
 import Fortcraft.skyworld.menu.SkyblockMenu;
 import Fortcraft.skyworld.menu.QuestMenu;
 import Fortcraft.skyworld.storage.StorageBag;
+import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.HotbarSlot;
 import Fortcraft.skyworld.utils.PlayerMode;
+import Fortcraft.skyworld.utils.Rarity;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -16,6 +19,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 public class MenuListener implements Listener {
@@ -24,32 +28,24 @@ public class MenuListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (e.getCurrentItem() == null) return;
 
-        // --- PRIORIDAD 1: MENÚS DINÁMICOS (Basados en Holder) ---
-        // Esto detecta cualquier menú que extienda de SkyblockMenu (como el catálogo plano o QuestMenu)
         if (e.getInventory().getHolder() instanceof SkyblockMenu) {
             e.setCancelled(true);
             handleDynamicMenu(e);
             return;
         }
 
-        // --- PRIORIDAD 2: MENÚS ESTÁTICOS (Basados en Título/PDC) ---
         String title = e.getView().getTitle();
         Player player = (Player) e.getWhoClicked();
 
-        // 1. MANEJO DE GLOBAL MENU
         if (title.contains("Menú ")) {
             e.setCancelled(true);
             ItemStack item = e.getCurrentItem();
-
             if (item.hasItemMeta()) {
-                // Opción A: Botón de configurar equipamiento (Anvil, Slot 22)
                 if (item.getType() == Material.ANVIL && item.getItemMeta().getDisplayName().contains("Configurar")) {
                     LoadoutGUI.open(player);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     return;
                 }
-
-                // Opción B: Botón del diario de misiones (Book, Slot 13)
                 if (item.getType() == Material.BOOK && item.getItemMeta().getDisplayName().contains("Diario de Misiones")) {
                     QuestMenu.open(player);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1.1f);
@@ -59,7 +55,6 @@ public class MenuListener implements Listener {
             return;
         }
 
-        // 2. MANEJO DE LOADOUT GUI
         if (title.startsWith(LoadoutGUI.PREFIX)) {
             e.setCancelled(true);
             var meta = e.getCurrentItem().getItemMeta();
@@ -74,7 +69,6 @@ public class MenuListener implements Listener {
             return;
         }
 
-        // 3. MANEJO DE SELECTOR DE ITEMS
         if (title.startsWith(LoadoutGUI.SELECTOR_PREFIX)) {
             e.setCancelled(true);
             var meta = e.getCurrentItem().getItemMeta();
@@ -111,9 +105,6 @@ public class MenuListener implements Listener {
         }
     }
 
-    /**
-     * Lógica para los menús cargados desde menus.yml o menús dinámicos controlados por holder
-     */
     private void handleDynamicMenu(InventoryClickEvent e) {
         SkyblockMenu menu = (SkyblockMenu) e.getInventory().getHolder();
         MenuItem item = menu.getItem(e.getSlot());
@@ -122,37 +113,71 @@ public class MenuListener implements Listener {
         Player p = (Player) e.getWhoClicked();
         var handler = Skyworld.getInstance().getManagerHandler();
         EconomyManager eco = handler.getEconomyManager();
-        StorageBag bag = handler.getDataManager().getPlayerData(p.getUniqueId()).getStorageBag();
+
+        var playerData = handler.getDataManager().getPlayerData(p.getUniqueId());
+        StorageBag bag = playerData.getStorageBag();
+        String targetId = item.getTargetId().toLowerCase();
 
         switch (item.getAction()) {
             case BUY -> {
                 if (eco.withdraw(p, item.getPrice())) {
-                    Material mat = Material.matchMaterial(item.getTargetId());
-                    if (mat != null) p.getInventory().addItem(new ItemStack(mat, item.getAmount()));
+                    var template = ItemRegistry.getDropTemplates().get(targetId);
+                    if (template != null) {
+                        Rarity rarity = Rarity.fromString(template.rarity());
+                        ItemStack itemStack = new ItemStack(template.material(), item.getAmount());
+
+                        var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
+                        ItemMeta meta = itemStack.getItemMeta();
+                        if (meta != null) {
+                            meta.displayName(formattedName);
+                            itemStack.setItemMeta(meta);
+                        }
+
+                        if (template.isEquipment()) {
+                            // playerData.getArmory().addItem(itemStack, targetId, rarity);
+                            p.sendMessage(ColorUtils.format("&3[Tienda] &fComprado y enviado a la &bArmería&f."));
+                        } else {
+                            // Mantenemos tu estándar del resto del plugin: Guardar usando el displayName
+                            bag.addItem(itemStack, template.displayName(), rarity);
+                            p.sendMessage(ColorUtils.format("&a[Tienda] &fComprado y guardado en tu &eInfinibag&f."));
+                        }
+                    } else {
+                        Material mat = Material.matchMaterial(item.getTargetId());
+                        if (mat != null) p.getInventory().addItem(new ItemStack(mat, item.getAmount()));
+                    }
+
                     p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
-                    p.sendMessage("§aHas comprado " + item.getAmount() + "x de este objeto.");
                 } else {
                     p.sendMessage("§cNo tienes suficiente dinero.");
                     p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
                 }
             }
             case SELL -> {
-                if (bag.hasItem(item.getTargetId(), item.getAmount())) {
-                    bag.removeItem(item.getTargetId(), item.getAmount());
-                    eco.addCoins(p, item.getPrice());
-                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
-                    p.sendMessage("§aVendido con éxito por " + item.getPrice() + ".");
+                // 1. Buscamos la plantilla usando el targetId del menú para conocer su displayName real
+                var template = ItemRegistry.getDropTemplates().get(targetId);
+
+                if (template != null) {
+                    String finalBagKey = template.displayName(); // El nombre exacto con el que se guarda en la bolsa
+
+                    // 2. Comprobamos y removemos en la StorageBag usando el nombre visual como clave
+                    if (bag.hasItem(finalBagKey, item.getAmount())) {
+                        bag.removeItem(finalBagKey, item.getAmount());
+                        eco.addCoins(p, item.getPrice());
+
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
+                        p.sendMessage(ColorUtils.format("&a[Tienda] &fVendiste &7" + item.getAmount() + "x " + finalBagKey + " &fpor &e$" + item.getPrice() + " Monedas&a."));
+                    } else {
+                        p.sendMessage("§cNo tienes suficientes objetos en tu bolsa.");
+                        p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+                    }
                 } else {
-                    p.sendMessage("§cNo tienes suficientes objetos en tu bolsa.");
-                    p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+                    // Fallback por si la id del menú no está registrada en el drops/items.yml
+                    p.sendMessage("§cError: No se pudo encontrar la información del ítem para procesar la venta.");
                 }
             }
             case CLOSE -> p.closeInventory();
             case COMMAND -> {
-                // Cerramos primero el inventario para evitar superposiciones visuales
                 p.closeInventory();
-
-                // Si viene del menú de misiones (ej: "pathtool goto tutorial_inicio"), interceptamos
                 String cmd = item.getTargetId();
                 if (cmd.startsWith("pathtool goto ")) {
                     String questId = cmd.replace("pathtool goto ", "");

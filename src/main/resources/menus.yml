@@ -4,15 +4,15 @@ menus:
     size: 27
     items:
       '11':
-        material: COBBLESTONE
-        name: "<white>Vender Adoquín"
+        material: STONE
+        name: "<white>Vender Piedra"
         lore:
           - "<gray>Precio: <green>1.0 monedas"
           - "<yellow>Click para vender 10x"
         action: SELL
-        target-item: <white>Piedra # ID interno del item en StorageBag
+        target-item: stone
         amount: 10
-        price: 10.0
+        price: 0
       '15':
         material: STONE
         name: "<white>Comprar Piedra"
@@ -22,7 +22,17 @@ menus:
         action: BUY
         target-item: stone
         amount: 1
-        price: 10.0
+        price: 0
+      '16':
+        material: COD
+        name: "<white>Vender Cod"
+        lore:
+          - "<gray>Precio: <red>10.0 monedas"
+          - "<yellow>Click para comprar 1x"
+        action: SELL
+        target-item: fishing_cod_large
+        amount: 1
+        price: 0
       '26':
         material: BARRIER
         name: "<red>Cerrar"

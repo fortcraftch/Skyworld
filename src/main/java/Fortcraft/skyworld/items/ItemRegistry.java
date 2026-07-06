@@ -1,6 +1,9 @@
 package Fortcraft.skyworld.items;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.utils.ColorUtils;
+import Fortcraft.skyworld.utils.Rarity;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -19,79 +22,128 @@ import java.util.*;
 
 public class ItemRegistry {
 
-    private static final Map<String, CustomItemData> templates = new HashMap<>();
+    private static final Map<String, CustomItemData> itemTemplates = new HashMap<>();
+    private static final Map<String, CustomDropData> dropTemplates = new HashMap<>();
 
     public static final NamespacedKey KEY_ID = new NamespacedKey("skyworld", "item_id");
     public static final NamespacedKey KEY_CATEGORY = new NamespacedKey("skyworld", "category");
     public static final NamespacedKey KEY_FORTUNE = new NamespacedKey("skyworld", "mining_fortune");
 
     public static void load() {
-        templates.clear();
-        File file = new File(Skyworld.getInstance().getDataFolder(), "items.yml");
-        if (!file.exists()) createDefaultConfig(file);
+        itemTemplates.clear();
+        dropTemplates.clear();
 
+        File itemsFile = new File(Skyworld.getInstance().getDataFolder(), "items.yml");
+        if (!itemsFile.exists()) createDefaultItemsConfig(itemsFile);
+        loadItems(itemsFile);
+
+        File dropsFile = new File(Skyworld.getInstance().getDataFolder(), "drops.yml");
+        if (!dropsFile.exists()) createDefaultDropsConfig(dropsFile);
+        loadDrops(dropsFile);
+    }
+
+    private static void loadItems(File file) {
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
         for (String id : config.getKeys(false)) {
             ConfigurationSection section = config.getConfigurationSection(id);
             if (section == null) continue;
 
-            // 1. CARGAR ATRIBUTOS BUKKIT (DAÑO, VELOCIDAD...)
-            Map<Attribute, Double> stats = new HashMap<>();
-            ConfigurationSection statsSec = section.getConfigurationSection("stats");
-            if (statsSec != null) {
-                for (String key : statsSec.getKeys(false)) {
-                    try {
-                        stats.put(Attribute.valueOf(key.toUpperCase()), statsSec.getDouble(key));
-                    } catch (IllegalArgumentException e) {
-                        Skyworld.getInstance().getLogger().warning("Atributo Bukkit inválido: " + key);
-                    }
-                }
-            }
+            Map<Attribute, Double> stats = loadBukkitStats(section, file.getName());
+            Map<String, Double> customStats = loadCustomStats(section);
 
-            // 2. CARGAR STATS CUSTOM (FORTUNA, ETC)
-            Map<String, Double> customStats = new HashMap<>();
-            ConfigurationSection customSec = section.getConfigurationSection("custom_stats");
-            if (customSec != null) {
-                for (String key : customSec.getKeys(false)) {
-                    customStats.put(key.toLowerCase(), customSec.getDouble(key));
-                }
-            }
-
-            templates.put(id, new CustomItemData(
+            String category = section.getString("category", "ANY").toUpperCase();
+            itemTemplates.put(id, new CustomItemData(
                     id,
                     Material.valueOf(section.getString("material", "BARRIER").toUpperCase()),
-                    section.getString("name", "§c" + id),
+                    section.getString("name", id),
                     section.getStringList("lore"),
-                    section.getString("category", "ANY").toUpperCase(),
+                    category,
+                    section.getString("rarity", "COMUN").toUpperCase(),
                     stats,
-                    customStats // Ahora pasamos los customStats al constructor
+                    customStats,
+                    true
             ));
         }
     }
 
-    public static ItemStack build(String id) {
-        CustomItemData data = templates.get(id);
-        if (data == null) return null;
+    private static void loadDrops(File file) {
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
+        for (String id : config.getKeys(false)) {
+            ConfigurationSection section = config.getConfigurationSection(id);
+            if (section == null) continue;
+
+            Map<String, Double> customStats = loadCustomStats(section);
+
+            dropTemplates.put(id, new CustomDropData(
+                    id,
+                    Material.valueOf(section.getString("material", "BARRIER").toUpperCase()),
+                    section.getString("name", id),
+                    section.getStringList("lore"),
+                    section.getString("rarity", "COMUN").toUpperCase(),
+                    section.getString("category", "GLOBAL").toUpperCase(), // Captura la categoría del drops.yml
+                    customStats,
+                    false
+            ));
+        }
+    }
+
+    private static Map<Attribute, Double> loadBukkitStats(ConfigurationSection section, String fileName) {
+        Map<Attribute, Double> stats = new HashMap<>();
+        ConfigurationSection statsSec = section.getConfigurationSection("stats");
+        if (statsSec != null) {
+            for (String key : statsSec.getKeys(false)) {
+                try {
+                    stats.put(Attribute.valueOf(key.toUpperCase()), statsSec.getDouble(key));
+                } catch (IllegalArgumentException e) {
+                    Skyworld.getInstance().getLogger().warning("Atributo Bukkit inválido en " + fileName + ": " + key);
+                }
+            }
+        }
+        return stats;
+    }
+
+    private static Map<String, Double> loadCustomStats(ConfigurationSection section) {
+        Map<String, Double> customStats = new HashMap<>();
+        ConfigurationSection customSec = section.getConfigurationSection("custom_stats");
+        if (customSec != null) {
+            for (String key : customSec.getKeys(false)) {
+                customStats.put(key.toLowerCase(), customSec.getDouble(key));
+            }
+        }
+        return customStats;
+    }
+
+    public static ItemStack build(String id) {
+        if (itemTemplates.containsKey(id)) {
+            return buildItem(itemTemplates.get(id));
+        }
+        if (dropTemplates.containsKey(id)) {
+            return buildDrop(dropTemplates.get(id));
+        }
+        return null;
+    }
+
+    private static ItemStack buildItem(CustomItemData data) {
         ItemStack item = new ItemStack(data.material());
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
 
-        // IDs base
-        meta.getPersistentDataContainer().set(KEY_ID, PersistentDataType.STRING, id);
-        meta.getPersistentDataContainer().set(KEY_CATEGORY, PersistentDataType.STRING, data.category());
+        meta.getPersistentDataContainer().set(KEY_ID, PersistentDataType.STRING, data.id());
 
-        // --- NUEVO: GRABAR STATS CUSTOM EN EL ITEM ---
+        // CAMBIO AQUÍ: Usamos la llave global de Skyworld
+        meta.getPersistentDataContainer().set(Skyworld.ITEM_CATEGORY_KEY, PersistentDataType.STRING, data.category());
+
         if (data.customStats().containsKey("mining_fortune")) {
             meta.getPersistentDataContainer().set(KEY_FORTUNE, PersistentDataType.DOUBLE, data.customStats().get("mining_fortune"));
         }
 
-        // Estética y Atributos Bukkit (como ya lo tenías)
         meta.setDisplayName(data.displayName().replace("&", "§"));
-        List<String> finalLore = new ArrayList<>();
-        data.lore().forEach(line -> finalLore.add(line.replace("&", "§")));
-        meta.setLore(finalLore);
+
+        List<net.kyori.adventure.text.Component> finalLore = new ArrayList<>();
+        data.lore().forEach(line -> finalLore.add(ColorUtils.format(line).decoration(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
+        meta.lore(finalLore);
 
         data.stats().forEach((attr, value) -> {
             meta.addAttributeModifier(attr, new AttributeModifier(UUID.randomUUID(), "skyworld_stat", value, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlot.HAND));
@@ -101,22 +153,41 @@ public class ItemRegistry {
         return item;
     }
 
-    private static void createDefaultConfig(File file) {
+    private static ItemStack buildDrop(CustomDropData data) {
+        ItemStack item = new ItemStack(data.material());
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return item;
+
+        meta.getPersistentDataContainer().set(KEY_ID, PersistentDataType.STRING, data.id());
+
+        // CAMBIO AQUÍ: Usamos la llave global de Skyworld
+        if (data.category() != null) {
+            meta.getPersistentDataContainer().set(Skyworld.ITEM_CATEGORY_KEY, PersistentDataType.STRING, data.category().toUpperCase());
+        }
+
+        Rarity rarity = Rarity.fromString(data.rarity());
+        meta.displayName(rarity.format(data.displayName()));
+
+        List<net.kyori.adventure.text.Component> finalLore = new ArrayList<>();
+        data.lore().forEach(line -> finalLore.add(ColorUtils.format(line).decoration(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
+        meta.lore(finalLore);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private static void createDefaultItemsConfig(File file) {
         try {
             if (!Skyworld.getInstance().getDataFolder().exists()) Skyworld.getInstance().getDataFolder().mkdirs();
             file.createNewFile();
 
             FileConfiguration config = YamlConfiguration.loadConfiguration(file);
             config.set("novice_sword.material", "WOODEN_SWORD");
-            config.set("novice_sword.name", "&fEspada de Novato");
+            config.set("novice_sword.name", "Espada de Novato");
             config.set("novice_sword.category", "WEAPON");
+            config.set("novice_sword.rarity", "COMUN");
             config.set("novice_sword.stats.GENERIC_ATTACK_DAMAGE", 5.0);
-            config.set("novice_sword.lore", Arrays.asList("&7Una espada básica.", "&eCalidad: Comun"));
-
-            config.set("apple.material", "APPLE");
-            config.set("apple.name", "&cManzana Roja");
-            config.set("apple.category", "CONSUMABLE");
-            config.set("apple.lore", Arrays.asList("&7Restaura hambre."));
+            config.set("novice_sword.lore", Arrays.asList("<gray>Una espada básica.", "<yellow>Calidad: Común"));
 
             config.save(file);
         } catch (IOException e) {
@@ -124,7 +195,25 @@ public class ItemRegistry {
         }
     }
 
-    public static Map<String, CustomItemData> getTemplates() {
-        return templates;
+    private static void createDefaultDropsConfig(File file) {
+        try {
+            if (!Skyworld.getInstance().getDataFolder().exists()) Skyworld.getInstance().getDataFolder().mkdirs();
+            file.createNewFile();
+
+            FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+            config.set("ancient_amber.material", "HONEYCOMB");
+            config.set("ancient_amber.name", "Ámbar Ancestral");
+            config.set("ancient_amber.rarity", "RARO");
+            config.set("ancient_amber.category", "MINING"); // Añadido por defecto para consistencia
+            config.set("ancient_amber.lore", Arrays.asList("<gray>Una resina fósil altamente cotizada."));
+            config.set("ancient_amber.custom_stats.exp_given", 25.0);
+
+            config.save(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+    public static Map<String, CustomItemData> getItemTemplates() { return itemTemplates; }
+    public static Map<String, CustomDropData> getDropTemplates() { return dropTemplates; }
 }

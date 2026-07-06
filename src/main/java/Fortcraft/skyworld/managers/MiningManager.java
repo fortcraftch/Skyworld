@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.mining.MiningDrop;
 import Fortcraft.skyworld.mining.MiningRegenState;
 import Fortcraft.skyworld.zones.MiningZone;
@@ -55,7 +56,17 @@ public class MiningManager implements Manager {
 
         if (drop == null) return false;
 
+        var template = ItemRegistry.getDropTemplates().get(drop.itemId());
+
         drop.giveToStorage(p);
+
+        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
+        if (template != null && template.customStats() != null) {
+            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
+            if (expGiven > 0) {
+                p.giveExp((int) expGiven);
+            }
+        }
 
         MiningRegenState state = regeneratingBlocks.computeIfAbsent(block, b -> new MiningRegenState());
         state.pushHistory(drop); // Guardamos qué drop salió para logs o futuros usos

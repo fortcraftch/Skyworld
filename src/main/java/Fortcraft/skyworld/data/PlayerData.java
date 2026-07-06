@@ -85,7 +85,6 @@ public class PlayerData {
         return loadouts.get(mode);
     }
 
-    // --- MÉTODOS DE DESCUBRIMIENTO (Tu código original + optimización) ---
     public void discover(String itemId) {
         discoveredItems.add(itemId);
     }

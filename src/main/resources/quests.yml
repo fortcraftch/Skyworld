@@ -14,7 +14,13 @@ quests:
         type: "TALK_NPC"
         target: "merchant_blocks"
         amount: 1
-
+    rewards:
+      exp: 150
+      money: 500.0
+      items:
+      drops:
+        dense_diamond: 4
+        fishing_nautilus_giant: 5
   tutorial_inicio1:
     title: "§bAventura Inicial"
     stages:
@@ -30,3 +36,10 @@ quests:
         type: "TALK_NPC"
         target: "merchant_blocks"
         amount: 1
+    rewards:
+      exp: 150
+      money: 500.0
+      items:
+      drops:
+        dense_diamond: 4
+        fishing_nautilus_giant: 5

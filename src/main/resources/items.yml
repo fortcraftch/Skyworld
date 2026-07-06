@@ -3,6 +3,7 @@ novice_sword:
   material: WOODEN_SWORD
   name: "&fEspada de Novato"
   category: "WEAPON"
+  rarity: "ESPECIAL"
   stats:
     GENERIC_ATTACK_DAMAGE: 5.0
   lore:
@@ -14,6 +15,7 @@ iron_sword:
   material: IRON_SWORD
   name: "&7Espada de Hierro"
   category: "WEAPON"
+  rarity: "COMUN"
   stats:
     LUCK: 150.0
     GENERIC_ATTACK_DAMAGE: 8.0
@@ -24,5 +26,6 @@ apple:
   material: APPLE
   name: "&aManzana Curativa"
   category: "CONSUMABLE"
+  rarity: "EPICO"
   lore:
     - "&7Restaura un poco de vida."

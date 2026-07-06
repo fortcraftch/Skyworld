@@ -201,7 +201,7 @@ public class NPCManager implements Manager {
 
         // Evitamos que se guarde en el archivo del mundo (Chunk)
         // ya que nosotros lo gestionamos via npcs.yml
-        entity.setPersistent(false);
+        entity.setPersistent(true);
 
         // Metadatos para lógica
         entity.setMetadata("NPC_DATA_ID", new org.bukkit.metadata.FixedMetadataValue(Skyworld.getInstance(), npc.getId()));

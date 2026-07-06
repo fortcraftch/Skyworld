@@ -40,15 +40,22 @@ public class FarmBiome {
                 List<FarmDrop> cropDrops = new ArrayList<>();
                 ConfigurationSection dropsListSec = cropSec.getConfigurationSection("drops");
 
+                // Cambia la lectura interna del bucle del constructor en FarmBiome por esto:
                 if (dropsListSec != null) {
                     for (String dropId : dropsListSec.getKeys(false)) {
                         ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
 
-                        // Asumiendo que has actualizado FarmDrop.fromConfig igual que Foraging/Mining
-                        FarmDrop drop = FarmDrop.fromConfig(
+                        // El dropId de la sección o una key explícita será el itemId unificado
+                        String itemId = singleDropSec.getString("item_id", dropId);
+                        double weight = singleDropSec.getDouble("weight", 10.0);
+                        int amount = singleDropSec.getInt("amount", 1);
+
+                        FarmDrop drop = new FarmDrop(
                                 sourceMat,
                                 sourceName,
-                                singleDropSec,
+                                itemId,
+                                weight,
+                                amount,
                                 defRegen
                         );
                         cropDrops.add(drop);

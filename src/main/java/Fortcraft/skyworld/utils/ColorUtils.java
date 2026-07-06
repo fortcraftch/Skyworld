@@ -15,7 +15,7 @@ public class ColorUtils {
 
     // Definición de colores para las rarezas animadas
     private static final String LEGENDARY_COLORS = "#FFD700:#FFA500:#FFFFE0:#FFA500:#FFD700"; // Oro -> Naranja -> Blanco -> Oro
-    private static final String EXOTIC_COLORS = "#FF00FF:#00FFFF:#FF00FF"; // Magenta -> Cyan -> Magenta
+    private static final String EXOTIC_COLORS = "#8C0808:#E31818:#FF7E7E:#E31818:#8C0808"; // Rojo -> Oscuro -> Blanco -> Rojo
 
     public static Component format(String text) {
         if (text == null || text.isEmpty()) return Component.empty();

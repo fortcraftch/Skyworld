@@ -60,13 +60,12 @@ public class StorageBag {
 
     private PlayerMode detectCategory(ItemMeta meta) {
         var pdc = meta.getPersistentDataContainer();
+
         if (pdc.has(Skyworld.ITEM_CATEGORY_KEY, org.bukkit.persistence.PersistentDataType.STRING)) {
             String tag = pdc.get(Skyworld.ITEM_CATEGORY_KEY, org.bukkit.persistence.PersistentDataType.STRING);
             try {
-                return PlayerMode.valueOf(tag);
-            } catch (Exception e) {
-                return PlayerMode.GLOBAL;
-            }
+                return PlayerMode.valueOf(tag.toUpperCase());
+            } catch (Exception ignored) {}
         }
         return PlayerMode.GLOBAL;
     }

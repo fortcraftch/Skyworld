@@ -89,7 +89,7 @@ public class LoadoutGUI {
             default -> "ANY";
         };
 
-        ItemRegistry.getTemplates().forEach((id, data) -> {
+        ItemRegistry.getItemTemplates().forEach((id, data) -> {
             // Filtrar por categoría
             if (filterCategory.equals("ANY") || data.category().equalsIgnoreCase(filterCategory)) {
                 ItemStack icon = ItemRegistry.build(id); // Construimos el ítem real

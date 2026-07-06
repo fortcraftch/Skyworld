@@ -2,17 +2,22 @@ package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.commands.QuestAdminCommand;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.listeners.QuestJoinListener;
 import Fortcraft.skyworld.quests.Quest;
 import Fortcraft.skyworld.quests.QuestStage;
 import Fortcraft.skyworld.quests.QuestType;
 import Fortcraft.skyworld.quests.PlayerQuestProgress;
+import Fortcraft.skyworld.utils.ColorUtils;
+import Fortcraft.skyworld.utils.Rarity;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.util.*;
@@ -21,7 +26,7 @@ public class QuestManager implements Manager {
 
     private final Map<String, Quest> registry = new HashMap<>();
     private final Map<UUID, Map<String, PlayerQuestProgress>> playerProfiles = new HashMap<>();
-    private final Map<UUID, String> trackingQuest = new HashMap<>(); // Jugador -> QuestId seleccionada para rastrear
+    private final Map<UUID, String> trackingQuest = new HashMap<>();
 
     private File file;
     private FileConfiguration config;
@@ -66,6 +71,27 @@ public class QuestManager implements Manager {
             String title = section.getString(id + ".title");
             Quest quest = new Quest(id, title);
 
+            quest.setRewardExp(section.getInt(id + ".rewards.exp", 0));
+
+            // NUEVO: Cargar el dinero desde la sección rewards
+            quest.setRewardMoney(section.getDouble(id + ".rewards.money", 0.0));
+
+            // 1. Cargar Ítems destinados a la Armería
+            ConfigurationSection itemsSection = section.getConfigurationSection(id + ".rewards.items");
+            if (itemsSection != null) {
+                for (String itemId : itemsSection.getKeys(false)) {
+                    quest.addRewardItem(itemId, itemsSection.getInt(itemId));
+                }
+            }
+
+            // 2. Cargar Drops destinados a la Infinibag (StorageBag)
+            ConfigurationSection dropsSection = section.getConfigurationSection(id + ".rewards.drops");
+            if (dropsSection != null) {
+                for (String dropId : dropsSection.getKeys(false)) {
+                    quest.addRewardDrop(dropId, dropsSection.getInt(dropId));
+                }
+            }
+
             List<?> stageList = section.getList(id + ".stages");
             if (stageList != null) {
                 for (Object obj : stageList) {
@@ -74,19 +100,82 @@ public class QuestManager implements Manager {
                         QuestType type = QuestType.valueOf((String) map.get("type"));
                         String target = String.valueOf(map.get("target"));
                         int amount = (int) map.get("amount");
-
                         quest.addStage(new QuestStage(desc, type, target, amount));
                     }
                 }
             }
             registry.put(id.toLowerCase(), quest);
         }
-        Skyworld.getInstance().getLogger().info("Sistema de Misiones: Cargadas " + registry.size() + " misiones base.");
     }
 
-    /**
-     * Avanza de forma genérica el progreso del objetivo de un jugador
-     */
+    private void giveQuestRewards(Player player, Quest quest) {
+        var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
+        var playerData = dataManager.getPlayerData(player.getUniqueId());
+
+        // 1. Recompensa de Experiencia
+        if (quest.getRewardExp() > 0) {
+            player.giveExp(quest.getRewardExp());
+            player.sendMessage(ColorUtils.format("&a+ " + quest.getRewardExp() + " EXP de Misión"));
+        }
+
+        // 2. Recompensa de Economía
+        if (quest.getRewardMoney() > 0) {
+            playerData.addCoins(quest.getRewardMoney());
+            player.sendMessage(ColorUtils.format("&e+ $" + quest.getRewardMoney() + " Monedas"));
+        }
+
+        // 3. CANAL DROPS ➔ Se añaden a la Infinibag (StorageBag)
+        if (!quest.getRewardDrops().isEmpty()) {
+            for (Quest.QuestRewardEntry reward : quest.getRewardDrops()) {
+                var template = ItemRegistry.getDropTemplates().get(reward.id());
+
+                if (template != null) {
+                    Rarity rarity = Rarity.fromString(template.rarity());
+                    ItemStack itemStack = new ItemStack(template.material(), reward.amount());
+
+                    // Generamos el nombre con su gradiente/animación correspondiente
+                    var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
+
+                    ItemMeta meta = itemStack.getItemMeta();
+                    if (meta != null) {
+                        meta.displayName(formattedName);
+                        itemStack.setItemMeta(meta);
+                    }
+
+                    playerData.getStorageBag().addItem(itemStack, template.displayName(), rarity);
+
+                    player.sendMessage(ColorUtils.format("&a+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Añadido a la Bolsa)")));
+                }
+            }
+        }
+
+        // 4. CANAL ITEMS ➔ Se añaden a la Armería del jugador
+        if (!quest.getRewardItems().isEmpty()) {
+            for (Quest.QuestRewardEntry reward : quest.getRewardItems()) {
+                var template = ItemRegistry.getDropTemplates().get(reward.id());
+
+                if (template != null) {
+                    Rarity rarity = Rarity.fromString(template.rarity());
+                    ItemStack itemStack = new ItemStack(template.material(), reward.amount());
+
+                    var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
+
+                    ItemMeta meta = itemStack.getItemMeta();
+                    if (meta != null) {
+                        meta.displayName(formattedName);
+                        itemStack.setItemMeta(meta);
+                    }
+
+                    // playerData.getArmory().addItem(itemStack, reward.id(), rarity);
+
+                    player.sendMessage(ColorUtils.format("&3+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Enviado a la Armería)")));
+                }
+            }
+        }
+
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1f);
+    }
+
     public void handleProgress(Player player, QuestType type, String targetId, int amount) {
         UUID uuid = player.getUniqueId();
         Map<String, PlayerQuestProgress> activeQuests = playerProfiles.get(uuid);
@@ -119,6 +208,8 @@ public class QuestManager implements Manager {
             progress.setStageIndex(nextIndex);
             player.sendMessage("§a§l[Misiones] §f¡Felicidades! Has completado la misión: §b" + quest.getTitle());
 
+            giveQuestRewards(player, quest);
+
             if (quest.getId().equalsIgnoreCase(trackingQuest.get(player.getUniqueId()))) {
                 Skyworld.getInstance().getManagerHandler().getNavigationManager().stopGuiding(player);
                 trackingQuest.remove(player.getUniqueId());
@@ -128,20 +219,15 @@ public class QuestManager implements Manager {
             QuestStage nextStage = quest.getStages().get(nextIndex);
             player.sendMessage("§a§l[Misiones] §fSiguiente etapa: §e" + nextStage.getDescription());
 
-            // Si es la misión actualmente seleccionada en el HUD/Guía y la nueva etapa requiere viajar, encendemos el mapa automáticamente
             if (quest.getId().equalsIgnoreCase(trackingQuest.get(player.getUniqueId()))) {
                 updateNavigationGuide(player, nextStage);
             }
         }
     }
 
-    /**
-     * Define qué misión controlará el mapa de grafos del jugador
-     */
     public void setTrackingQuest(Player player, String questId) {
         UUID uuid = player.getUniqueId();
 
-        // CORRECCIÓN: Si pasamos null, significa que queremos dejar de seguir cualquier misión
         if (questId == null) {
             trackingQuest.remove(uuid);
             return;
@@ -150,7 +236,6 @@ public class QuestManager implements Manager {
         Map<String, PlayerQuestProgress> activeQuests = playerProfiles.computeIfAbsent(uuid, k -> new HashMap<>());
 
         if (!activeQuests.containsKey(questId.toLowerCase())) {
-            // Si el jugador no la tenía aceptada/iniciada, la inicializamos
             activeQuests.put(questId.toLowerCase(), new PlayerQuestProgress(questId));
         }
 
@@ -171,11 +256,9 @@ public class QuestManager implements Manager {
         if (stage.getType() == QuestType.VISIT_LOCATION) {
             nav.startGuiding(player, stage.getTargetId());
         } else {
-            nav.stopGuiding(player); // Si la etapa cambia a minar/matar, limpiamos la estela de partículas
+            nav.stopGuiding(player);
         }
     }
-
-    // --- CARGA Y GUARDADO DE JUGADORES (Se llamará en el DataManager) ---
 
     public void loadPlayerProgress(UUID uuid, FileConfiguration playerConfig) {
         Map<String, PlayerQuestProgress> progressMap = new HashMap<>();
@@ -215,11 +298,10 @@ public class QuestManager implements Manager {
     }
 
     private void saveAllPlayerProgress() {
-        // Método preventivo de volcado en unload()
         for (UUID uuid : playerProfiles.keySet()) {
             var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
             if (dataManager != null) {
-                // Aquí delegarías el guardado regular a los archivos planos de tus usuarios
+                // Aquí delegarías el guardado regular
             }
         }
     }

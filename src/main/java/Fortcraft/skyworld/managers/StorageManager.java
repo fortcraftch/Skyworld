@@ -26,4 +26,8 @@ public class StorageManager implements Manager {
         // Aquí guardarías los datos
         playerBags.clear();
     }
+
+    public StorageBag getStorageBag(UUID uuid){
+        return playerBags.get(uuid);
+    }
 }

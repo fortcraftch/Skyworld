@@ -2,6 +2,7 @@ package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.farming.FarmDrop;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.zones.FarmZone;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -42,15 +43,25 @@ public class FarmManager implements Manager {
 
     public boolean handleHarvest(Player p, Block block, FarmZone zone) {
         FarmDrop drop = zone.getBiome().getWeightedDrop(block.getType());
-
         if (drop == null) return false;
 
-        drop.giveToStorage(p);
-        if (drop.getExp() > 0) {
-            p.giveExp(drop.getExp());
-        }
-        this.scheduleRegen(block, drop);
+        // 1. Resolver los metadatos globales del item a partir de su ID único
+        var template = ItemRegistry.getDropTemplates().get(drop.itemId());
 
+        // 2. Dar el ítem al almacenamiento usando su identificador global unificado
+        // (Ajusta 'giveToStorage' si requiere el itemId String o el ItemStack generado por la factoría)
+        drop.giveToStorage(p);
+
+        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
+        if (template != null && template.customStats() != null) {
+            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
+            if (expGiven > 0) {
+                p.giveExp((int) expGiven);
+            }
+        }
+
+        // 4. Programar la regeneración del cultivo basado en los tiempos del bloque origen
+        this.scheduleRegen(block, drop);
         return true;
     }
 
@@ -91,13 +102,14 @@ public class FarmManager implements Manager {
         Block block = loc.getBlock();
         block.setType(drop.getSourceBlock(), false);
 
+        // Si el bloque implementa la interfaz Ageable (como el Trigo, Zanahorias, etc.), lo forzamos a su etapa final madura
         if (block.getBlockData() instanceof Ageable ageable) {
             ageable.setAge(ageable.getMaximumAge());
             block.setBlockData(ageable);
         }
 
         loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(0.5, 0.3, 0.5), 5, 0.2, 0.2, 0.2, 0.02);
-        loc.getWorld().playSound(loc.clone(), org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.2f);
+        loc.getWorld().playSound(loc.clone(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.2f);
     }
 
     public void registerZone(FarmZone zone) {
