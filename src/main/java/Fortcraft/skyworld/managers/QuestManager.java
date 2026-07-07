@@ -17,7 +17,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.util.*;
@@ -72,8 +71,6 @@ public class QuestManager implements Manager {
             Quest quest = new Quest(id, title);
 
             quest.setRewardExp(section.getInt(id + ".rewards.exp", 0));
-
-            // NUEVO: Cargar el dinero desde la sección rewards
             quest.setRewardMoney(section.getDouble(id + ".rewards.money", 0.0));
 
             // 1. Cargar Ítems destinados a la Armería
@@ -124,52 +121,42 @@ public class QuestManager implements Manager {
             player.sendMessage(ColorUtils.format("&e+ $" + quest.getRewardMoney() + " Monedas"));
         }
 
-        // 3. CANAL DROPS ➔ Se añaden a la Infinibag (StorageBag)
+        // 3. CANAL DROPS ➔ Se añaden a la Infinibag (StorageBag) usando ItemRegistry.build
         if (!quest.getRewardDrops().isEmpty()) {
             for (Quest.QuestRewardEntry reward : quest.getRewardDrops()) {
+                // CORRECCIÓN: Construimos el item real con texturas/NBT desde el registro centralizado
+                ItemStack itemStack = ItemRegistry.build(reward.id());
+                if (itemStack == null) continue;
+
+                itemStack.setAmount(reward.amount());
+
                 var template = ItemRegistry.getDropTemplates().get(reward.id());
+                Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+                var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : reward.id(), rarity);
 
-                if (template != null) {
-                    Rarity rarity = Rarity.fromString(template.rarity());
-                    ItemStack itemStack = new ItemStack(template.material(), reward.amount());
+                // CORRECCIÓN: Guardamos usando la ID única del objeto (ej: "fishing_cod_large"), no por nombre plano
+                playerData.getStorageBag().addItemWithoutDiscovery(itemStack, reward.id(), rarity);
 
-                    // Generamos el nombre con su gradiente/animación correspondiente
-                    var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
-
-                    ItemMeta meta = itemStack.getItemMeta();
-                    if (meta != null) {
-                        meta.displayName(formattedName);
-                        itemStack.setItemMeta(meta);
-                    }
-
-                    playerData.getStorageBag().addItem(itemStack, template.displayName(), rarity);
-
-                    player.sendMessage(ColorUtils.format("&a+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Añadido a la Bolsa)")));
-                }
+                player.sendMessage(ColorUtils.format("&a+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Añadido a la Bolsa)")));
             }
         }
 
-        // 4. CANAL ITEMS ➔ Se añaden a la Armería del jugador
+        // 4. CANAL ITEMS ➔ Se añaden a la Armería del jugador usando ItemRegistry.build
         if (!quest.getRewardItems().isEmpty()) {
             for (Quest.QuestRewardEntry reward : quest.getRewardItems()) {
+                // CORRECCIÓN: Construimos el item real con texturas/NBT desde el registro centralizado
+                ItemStack itemStack = ItemRegistry.build(reward.id());
+                if (itemStack == null) continue;
+
+                itemStack.setAmount(reward.amount());
+
                 var template = ItemRegistry.getDropTemplates().get(reward.id());
+                Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+                var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : reward.id(), rarity);
 
-                if (template != null) {
-                    Rarity rarity = Rarity.fromString(template.rarity());
-                    ItemStack itemStack = new ItemStack(template.material(), reward.amount());
+                // playerData.getArmory().addItem(itemStack, reward.id(), rarity);
 
-                    var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
-
-                    ItemMeta meta = itemStack.getItemMeta();
-                    if (meta != null) {
-                        meta.displayName(formattedName);
-                        itemStack.setItemMeta(meta);
-                    }
-
-                    // playerData.getArmory().addItem(itemStack, reward.id(), rarity);
-
-                    player.sendMessage(ColorUtils.format("&3+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Enviado a la Armería)")));
-                }
+                player.sendMessage(ColorUtils.format("&3+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Enviado a la Armería)")));
             }
         }
 

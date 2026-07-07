@@ -2,7 +2,6 @@ package Fortcraft.skyworld.storage;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.utils.PlayerMode;
-import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.utils.Rarity;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -23,11 +22,12 @@ public class StorageBag {
         }
     }
 
-    public void addItem(ItemStack item, String Source, Rarity rarity) {
+    public void addItem(ItemStack item, String itemId, Rarity rarity) {
         if (item == null || item.getType().isAir()) return;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
 
+        String cleanId = itemId.toLowerCase();
         String coloredName = meta.hasDisplayName()
                 ? net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(meta.displayName())
                 : item.getType().name().replace("_", " ");
@@ -35,17 +35,31 @@ public class StorageBag {
         var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
         var playerData = dataManager.getPlayerData(owner);
 
-        playerData.discover(owner, LogbookGUI.getCleanId(Source));
+        playerData.discover(owner, cleanId, coloredName);
 
-        loadItem(coloredName, item.getType(), item.getAmount(), detectCategory(meta), rarity);
+        loadItem(cleanId, coloredName, item.getType(), item.getAmount(), detectCategory(meta), rarity);
     }
 
-    public void loadItem(String displayName, Material material, int amount, PlayerMode category, Rarity rarity) {
+    public void addItemWithoutDiscovery(ItemStack item, String itemId, Rarity rarity) {
+        if (item == null || item.getType().isAir()) return;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+
+        String cleanId = itemId.toLowerCase();
+        String coloredName = meta.hasDisplayName()
+                ? net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(meta.displayName())
+                : item.getType().name().replace("_", " ");
+
+        loadItem(cleanId, coloredName, item.getType(), item.getAmount(), detectCategory(meta), rarity);
+    }
+
+
+    public void loadItem(String itemId, String displayName, Material material, int amount, PlayerMode category, Rarity rarity) {
         Map<String, StorageItemData> shelf = categorizedContents.get(category);
-        if (shelf.containsKey(displayName)) {
-            shelf.get(displayName).addAmount(amount);
+        if (shelf.containsKey(itemId)) {
+            shelf.get(itemId).addAmount(amount);
         } else {
-            shelf.put(displayName, new StorageItemData(material, displayName, amount, category, rarity));
+            shelf.put(itemId, new StorageItemData(itemId, material, displayName, amount, category, rarity));
         }
     }
 
@@ -60,49 +74,43 @@ public class StorageBag {
 
     private PlayerMode detectCategory(ItemMeta meta) {
         var pdc = meta.getPersistentDataContainer();
-
         if (pdc.has(Skyworld.ITEM_CATEGORY_KEY, org.bukkit.persistence.PersistentDataType.STRING)) {
             String tag = pdc.get(Skyworld.ITEM_CATEGORY_KEY, org.bukkit.persistence.PersistentDataType.STRING);
-            try {
-                return PlayerMode.valueOf(tag.toUpperCase());
-            } catch (Exception ignored) {}
+            try { return PlayerMode.valueOf(tag.toUpperCase()); } catch (Exception ignored) {}
         }
         return PlayerMode.GLOBAL;
     }
 
-    public boolean removeItem(String displayName, int amount) {
-        if (!hasItem(displayName, amount)) return false;
+    public boolean removeItem(String itemId, int amount) {
+        String cleanId = itemId.toLowerCase();
+        if (!hasItem(cleanId, amount)) return false;
 
         int remainingToRemove = amount;
-
-        // Iteramos sobre las categorías para ir restando
         for (Map<String, StorageItemData> shelf : categorizedContents.values()) {
             if (remainingToRemove <= 0) break;
 
-            if (shelf.containsKey(displayName)) {
-                StorageItemData data = shelf.get(displayName);
+            if (shelf.containsKey(cleanId)) {
+                StorageItemData data = shelf.get(cleanId);
                 int available = data.getAmount();
 
                 if (available > remainingToRemove) {
-                    // Hay más de lo que necesitamos, solo restamos
                     data.setAmount(available - remainingToRemove);
                     remainingToRemove = 0;
                 } else {
-                    // Hay menos o igual, quitamos la entrada del mapa y seguimos
                     remainingToRemove -= available;
-                    shelf.remove(displayName);
+                    shelf.remove(cleanId);
                 }
             }
         }
         return true;
     }
 
-    public boolean hasItem(String displayName, int amount) {
+    public boolean hasItem(String itemId, int amount) {
+        String cleanId = itemId.toLowerCase();
         int total = 0;
-        // Buscamos en todas las categorías (Mining, Farming, etc.)
         for (Map<String, StorageItemData> shelf : categorizedContents.values()) {
-            if (shelf.containsKey(displayName)) {
-                total += shelf.get(displayName).getAmount();
+            if (shelf.containsKey(cleanId)) {
+                total += shelf.get(cleanId).getAmount();
             }
         }
         return total >= amount;
@@ -113,13 +121,15 @@ public class StorageBag {
     }
 
     public static class StorageItemData {
+        private final String itemId;
         private final Material material;
         private final String displayName;
         private final PlayerMode category;
-        private final Rarity rarity; // Nuevo campo persistente
+        private final Rarity rarity;
         private int amount;
 
-        public StorageItemData(Material material, String displayName, int amount, PlayerMode category, Rarity rarity) {
+        public StorageItemData(String itemId, Material material, String displayName, int amount, PlayerMode category, Rarity rarity) {
+            this.itemId = itemId.toLowerCase();
             this.material = material;
             this.displayName = displayName;
             this.amount = amount;
@@ -129,6 +139,7 @@ public class StorageBag {
 
         public void setAmount(int amount) { this.amount = amount; }
         public void addAmount(int extra) { this.amount += extra; }
+        public String getItemId() { return itemId; }
         public Material getMaterial() { return material; }
         public String getDisplayName() { return displayName; }
         public int getAmount() { return amount; }

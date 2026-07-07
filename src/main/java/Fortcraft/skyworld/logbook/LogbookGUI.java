@@ -79,10 +79,13 @@ public class LogbookGUI {
     private static void openMiningBiomeView(Player player, MiningBiome biome, PlayerData data) {
         Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Capa: " + biome.getDisplayName()));
 
+        // Agrupamos todos los drops por el bloque de origen (Material)
         Map<Material, List<MiningDrop>> groupedBySource = biome.getAllDrops().stream()
                 .collect(Collectors.groupingBy(MiningDrop::getSource));
 
         List<Map.Entry<Material, List<MiningDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
+
+        // Ordenamos las fuentes en el menú según la rareza de su PRIMER drop (o el criterio que prefieras)
         sortedEntries.sort((e1, e2) -> {
             var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
             var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
@@ -94,20 +97,23 @@ public class LogbookGUI {
         int slot = 10;
         for (Map.Entry<Material, List<MiningDrop>> entry : sortedEntries) {
             List<MiningDrop> blockDrops = entry.getValue();
-            MiningDrop primary = blockDrops.getFirst();
+            MiningDrop primary = blockDrops.getFirst(); // Tomamos el primer drop como referencia de la fuente
             double totalWeight = blockDrops.stream().mapToDouble(MiningDrop::getWeight).sum();
 
             var template = ItemRegistry.getDropTemplates().get(primary.itemId());
-            Material displayMat = primary.getSource();
+            Material displayMat = primary.getSource(); // El icono del menú será el bloque físico (ej: IRON_ORE)
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
+            boolean isSourceDiscovered = data.hasDiscovered(primary.getSourceId());
+
             ItemStack icon = createDiscoveryIcon(
-                    data.hasDiscovered(getCleanId(primary.getName())),
-                    displayMat,
-                    primary.getName(),
+                    isSourceDiscovered,
+                    displayMat,          // El bloque (ej: Material.IRON_ORE)
+                    primary.getName(),   // El nombre visual del bloque (ej: "&eMena de Hierro")
                     rarity,
-                    getLoreMining(blockDrops, totalWeight)
+                    getLoreMining(blockDrops, totalWeight) // Muestra los porcentajes de lo que puede dar
             );
+
             inv.setItem(slot++, icon);
             if ((slot % 9) == 8) slot += 2;
         }
@@ -141,8 +147,9 @@ public class LogbookGUI {
             Material displayMat = template != null ? template.material() : primary.getSourceBlock();
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
+            // REFACTOR: Usar getSourceId() de la fuente
             ItemStack icon = createDiscoveryIcon(
-                    data.hasDiscovered(getCleanId(primary.getName())),
+                    data.hasDiscovered(primary.getSourceId()),
                     displayMat,
                     primary.getName(),
                     rarity,
@@ -181,8 +188,9 @@ public class LogbookGUI {
             Material displayMat = primary.getSourceMaterial();
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
+            // REFACTOR: Usar getSourceId() de la fuente
             ItemStack icon = createDiscoveryIcon(
-                    data.hasDiscovered(getCleanId(primary.getName())),
+                    data.hasDiscovered(primary.getSourceId()),
                     displayMat,
                     primary.getName(),
                     rarity,
@@ -214,11 +222,10 @@ public class LogbookGUI {
             List<FishingDrop> variants = entry.getValue();
             FishingDrop primary = variants.getFirst();
 
-            String cleanGroupId = getCleanId(primary.getGroupId());
+            String cleanGroupId = primary.getGroupId().toLowerCase();
 
-            // Un grupo está descubierto si el ID de grupo está registrado, o si se ha pescado al menos una variante.
             boolean groupDiscovered = data.hasDiscovered(cleanGroupId)
-                    || variants.stream().anyMatch(v -> data.hasDiscovered(getCleanId(v.getItemId())));
+                    || variants.stream().anyMatch(v -> data.hasDiscovered(v.getItemId().toLowerCase()));
 
             String fishName = primary.getName();
 
@@ -227,7 +234,7 @@ public class LogbookGUI {
             details.add(parse("&fPesajes registrados:"));
 
             for (FishingDrop var : variants) {
-                boolean varDiscovered = data.hasDiscovered(getCleanId(var.getItemId()));
+                boolean varDiscovered = data.hasDiscovered(var.getItemId().toLowerCase());
                 String prefix = varDiscovered ? " &2✔ &a" : " &8✘ &7";
 
                 String sizeLabel = switch (var.getSize().toUpperCase()) {
@@ -248,7 +255,7 @@ public class LogbookGUI {
             ItemStack icon = createDiscoveryIcon(
                     groupDiscovered,
                     primary.getMaterial(),
-                    fishName, // BUG 1: Aplicado también al nombre principal del Icono interactivo
+                    fishName,
                     primary.getSpeciesRarity(),
                     details
             );
@@ -361,8 +368,8 @@ public class LogbookGUI {
     }
 
     private static void renderGlobalStats(Inventory inv, PlayerData data, Fortcraft.skyworld.managers.ZoneManager zm) {
-        long fishTotal = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getGroupId())).distinct().count();
-        long fishDiscovered = zm.getAllFishingDrops().stream().map(d -> getCleanId(d.getGroupId())).distinct().filter(data::hasDiscovered).count();
+        long fishTotal = zm.getAllFishingDrops().stream().map(d -> d.getGroupId().toLowerCase()).distinct().count();
+        long fishDiscovered = zm.getAllFishingDrops().stream().map(d -> d.getGroupId().toLowerCase()).distinct().filter(data::hasDiscovered).count();
         inv.setItem(19, createInfoIcon(Material.FISHING_ROD, "&bPesca", "&7Especies: &f" + fishDiscovered + "/" + fishTotal));
 
         long mineTotal = zm.getAllMiningBiomes().stream().flatMap(b -> b.getUniqueSourceIds().stream()).distinct().count();

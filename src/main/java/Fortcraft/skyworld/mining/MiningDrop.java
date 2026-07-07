@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class MiningDrop {
     private final Material source;
+    private final String sourceId; // NUEVO
     private final String sourceName;
     private final String itemId;
     private final double weight;
@@ -16,8 +17,9 @@ public class MiningDrop {
     private final Material transformTo;
     private final int regenTime;
 
-    public MiningDrop(Material source, String sourceName, String itemId, double weight, int amount, Material transformTo, int regenTime) {
+    public MiningDrop(Material source, String sourceId, String sourceName, String itemId, double weight, int amount, Material transformTo, int regenTime) {
         this.source = source;
+        this.sourceId = sourceId;
         this.sourceName = sourceName;
         this.itemId = itemId;
         this.weight = weight;
@@ -30,7 +32,6 @@ public class MiningDrop {
         ItemStack item = ItemRegistry.build(itemId);
         if (item == null) return;
 
-        // Forzar cantidad física en el ítem construido
         item.setAmount(this.amount);
 
         Rarity itemRarity = Rarity.COMUN;
@@ -42,15 +43,14 @@ public class MiningDrop {
         var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
         var playerData = dataManager.getPlayerData(player.getUniqueId());
 
-        // CORRECCIÓN: Si tu método .addItem() acepta un bucle o una cantidad explícita, úsala.
-        // Si no, agregamos un bucle clásico de seguridad para que la Bag registre el total de unidades extraídas
-        for (int i = 0; i < this.amount; i++) {
-            playerData.getStorageBag().addItem(item, sourceName, itemRarity);
-        }
+        playerData.discover(player.getUniqueId(), this.sourceId, this.sourceName);
+
+        playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
     }
 
     public String itemId() { return itemId; }
     public Material getSource() { return source; }
+    public String getSourceId() { return sourceId; }
     public String getName() { return sourceName; }
     public double getWeight() { return weight; }
     public int getAmount() { return amount; }

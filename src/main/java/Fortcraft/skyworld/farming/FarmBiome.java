@@ -21,7 +21,7 @@ public class FarmBiome {
 
     // Cambiado a Map de Listas para soportar múltiples drops por cultivo
     private final Map<Material, List<FarmDrop>> drops = new HashMap<>();
-    private final Set<String> uniqueSourceIds = new HashSet<>();
+    private final Set<String> uniqueSourceIds = new HashSet<>(); // Ahora guardará IDs
 
     public FarmBiome(String id, ConfigurationSection config) {
         this.id = id;
@@ -34,6 +34,7 @@ public class FarmBiome {
                 Material sourceMat = Material.valueOf(blockKey.toUpperCase());
                 ConfigurationSection cropSec = cropsSec.getConfigurationSection(blockKey);
 
+                String sourceId = blockKey.toLowerCase(); // ID Único de la fuente
                 String sourceName = cropSec.getString("name", blockKey);
                 int defRegen = cropSec.getInt("regen_time", 5);
 
@@ -52,6 +53,7 @@ public class FarmBiome {
 
                         FarmDrop drop = new FarmDrop(
                                 sourceMat,
+                                sourceId,
                                 sourceName,
                                 itemId,
                                 weight,
@@ -64,7 +66,7 @@ public class FarmBiome {
 
                 if (!cropDrops.isEmpty()) {
                     drops.put(sourceMat, cropDrops);
-                    uniqueSourceIds.add(LogbookGUI.getCleanId(sourceName));
+                    uniqueSourceIds.add(sourceId); // Guardamos la ID estricta
                 }
             }
         }

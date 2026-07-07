@@ -1,6 +1,5 @@
 package Fortcraft.skyworld.mining;
 
-import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -19,7 +18,7 @@ public class MiningBiome {
     private final Material icon;
 
     private final Map<Material, List<MiningDrop>> drops = new HashMap<>();
-    private final Set<String> uniqueSourceIds = new HashSet<>();
+    private final Set<String> uniqueSourceIds = new HashSet<>(); // Ahora guardará IDs
 
     public MiningBiome(String id, ConfigurationSection config) {
         this.id = id;
@@ -32,6 +31,7 @@ public class MiningBiome {
                 Material sourceMat = Material.valueOf(blockKey.toUpperCase());
                 ConfigurationSection blockSec = blocksSec.getConfigurationSection(blockKey);
 
+                String sourceId = blockKey.toLowerCase(); // ID Único de la fuente
                 String sourceName = blockSec.getString("name", blockKey);
                 Material defTransform = Material.valueOf(blockSec.getString("transform-to", "BEDROCK"));
                 int defRegen = blockSec.getInt("regen-time", 5);
@@ -43,7 +43,6 @@ public class MiningBiome {
                     for (String dropId : dropsListSec.getKeys(false)) {
                         ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
 
-                        // Mapeo situacional desde zones.yml
                         String itemId = singleDropSec.getString("item_id", dropId);
                         double weight = singleDropSec.getDouble("weight", 10.0);
                         int amount = singleDropSec.getInt("amount", 1);
@@ -51,6 +50,7 @@ public class MiningBiome {
 
                         MiningDrop drop = new MiningDrop(
                                 sourceMat,
+                                sourceId,
                                 sourceName,
                                 itemId,
                                 weight,
@@ -64,7 +64,7 @@ public class MiningBiome {
 
                 if (!blockDrops.isEmpty()) {
                     drops.put(sourceMat, blockDrops);
-                    uniqueSourceIds.add(LogbookGUI.getCleanId(sourceName));
+                    uniqueSourceIds.add(sourceId); // Guardamos la ID estricta
                 }
             }
         }

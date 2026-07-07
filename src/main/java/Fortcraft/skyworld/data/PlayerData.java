@@ -17,14 +17,9 @@ public class PlayerData {
     private final UUID uuid;
     private final StorageBag storageBag;
 
-    // --- ECONOMÍA ---
-    private double coins = 0.0; // Variable para almacenar el dinero
-
-    // --- PROGRESO ---
+    private double coins = 0.0;
     private final Set<String> discoveredItems = new HashSet<>();
     private final Map<PlayerMode, Map<Integer, String>> loadouts = new HashMap<>();
-
-    // --- ESTADÍSTICAS (Niveles, Mana, etc) ---
     private final Map<String, Double> stats = new HashMap<>();
 
     public PlayerData(UUID uuid) {
@@ -33,8 +28,6 @@ public class PlayerData {
         for (PlayerMode mode : PlayerMode.values()) {
             loadouts.put(mode, new HashMap<>());
         }
-
-        // Inicializar stats básicos si es necesario
         stats.put("combat_level", 1.0);
         stats.put("mining_level", 1.0);
     }
@@ -42,19 +35,9 @@ public class PlayerData {
     public UUID getUuid() { return uuid; }
     public StorageBag getStorageBag() { return storageBag; }
 
-    // --- MÉTODOS DE ECONOMÍA ---
-    public double getCoins() {
-        return coins;
-    }
-
-    public void setCoins(double coins) {
-        this.coins = coins;
-    }
-
-    public void addCoins(double amount) {
-        this.coins += amount;
-    }
-
+    public double getCoins() { return coins; }
+    public void setCoins(double coins) { this.coins = coins; }
+    public void addCoins(double amount) { this.coins += amount; }
     public boolean removeCoins(double amount) {
         if (this.coins >= amount) {
             this.coins -= amount;
@@ -63,45 +46,33 @@ public class PlayerData {
         return false;
     }
 
-    // --- MÉTODOS DE ESTADÍSTICAS ---
-    public double getStat(String key) {
-        return stats.getOrDefault(key, 0.0);
-    }
+    public double getStat(String key) { return stats.getOrDefault(key, 0.0); }
+    public void setStat(String key, double value) { stats.put(key, value); }
 
-    public void setStat(String key, double value) {
-        stats.put(key, value);
-    }
-
-    // --- MÉTODOS DE LOADOUT (Tu código original) ---
     public void setLoadoutItem(PlayerMode mode, HotbarSlot slot, String itemId) {
         loadouts.get(mode).put(slot.getSlotIndex(), itemId);
     }
-
     public String getLoadoutItem(PlayerMode mode, int slotIndex) {
         return loadouts.get(mode).get(slotIndex);
     }
+    public Map<Integer, String> getLoadoutForMode(PlayerMode mode) { return loadouts.get(mode); }
 
-    public Map<Integer, String> getLoadoutForMode(PlayerMode mode) {
-        return loadouts.get(mode);
-    }
+    public void discover(String id) { discoveredItems.add(id); }
 
-    public void discover(String itemId) {
-        discoveredItems.add(itemId);
-    }
-
-    public void discover(UUID uuid, String itemId) {
-        if (!discoveredItems.contains(itemId)) {
-            discoveredItems.add(itemId);
+    public void discover(UUID uuid, String id, String friendlyName) {
+        String cleanId = id.toLowerCase();
+        if (!discoveredItems.contains(cleanId)) {
+            discoveredItems.add(cleanId);
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                sendDiscoveryNotification(player, itemId);
+                sendDiscoveryNotification(player, friendlyName);
             }
         }
     }
 
-    private void sendDiscoveryNotification(Player player, String itemName) {
+    private void sendDiscoveryNotification(Player player, String friendlyName) {
         Component mainTitle = LegacyComponentSerializer.legacySection().deserialize("§6§l¡NUEVA ENTRADA!");
-        Component subTitle = LegacyComponentSerializer.legacySection().deserialize("§fHas descubierto: " + itemName);
+        Component subTitle = LegacyComponentSerializer.legacySection().deserialize("§fHas descubierto: " + friendlyName);
 
         Title title = Title.title(
                 mainTitle, subTitle,
@@ -112,22 +83,16 @@ public class PlayerData {
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.4f, 1.2f);
     }
 
-    public boolean hasDiscovered(String itemId) { return discoveredItems.contains(itemId); }
+    public boolean hasDiscovered(String id) { return discoveredItems.contains(id.toLowerCase()); }
     public Set<String> getDiscoveredItems() { return discoveredItems; }
-
-    // --- INTEGRACIÓN DE MISIONES ---
 
     public void loadQuestsProgress(org.bukkit.configuration.file.FileConfiguration playerConfig) {
         var questManager = Fortcraft.skyworld.Skyworld.getInstance().getManagerHandler().getQuestManager();
-        if (questManager != null) {
-            questManager.loadPlayerProgress(this.uuid, playerConfig);
-        }
+        if (questManager != null) questManager.loadPlayerProgress(this.uuid, playerConfig);
     }
 
     public void saveQuestsProgress(org.bukkit.configuration.file.FileConfiguration playerConfig) {
         var questManager = Fortcraft.skyworld.Skyworld.getInstance().getManagerHandler().getQuestManager();
-        if (questManager != null) {
-            questManager.savePlayerProgress(this.uuid, playerConfig);
-        }
+        if (questManager != null) questManager.savePlayerProgress(this.uuid, playerConfig);
     }
 }

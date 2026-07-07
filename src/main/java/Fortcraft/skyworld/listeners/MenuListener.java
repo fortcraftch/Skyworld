@@ -19,7 +19,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 public class MenuListener implements Listener {
@@ -121,29 +120,30 @@ public class MenuListener implements Listener {
         switch (item.getAction()) {
             case BUY -> {
                 if (eco.withdraw(p, item.getPrice())) {
-                    var template = ItemRegistry.getDropTemplates().get(targetId);
-                    if (template != null) {
-                        Rarity rarity = Rarity.fromString(template.rarity());
-                        ItemStack itemStack = new ItemStack(template.material(), item.getAmount());
+                    // CORRECCIÓN: Construimos el ítem real desde el registro usando su ID única
+                    ItemStack itemStack = ItemRegistry.build(targetId);
 
-                        var formattedName = ColorUtils.getAnimatedName(template.displayName(), rarity);
-                        ItemMeta meta = itemStack.getItemMeta();
-                        if (meta != null) {
-                            meta.displayName(formattedName);
-                            itemStack.setItemMeta(meta);
-                        }
+                    if (itemStack != null) {
+                        itemStack.setAmount(item.getAmount());
 
-                        if (template.isEquipment()) {
+                        var template = ItemRegistry.getDropTemplates().get(targetId);
+                        Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
+                        if (template != null && template.isEquipment()) {
                             // playerData.getArmory().addItem(itemStack, targetId, rarity);
                             p.sendMessage(ColorUtils.format("&3[Tienda] &fComprado y enviado a la &bArmería&f."));
                         } else {
-                            // Mantenemos tu estándar del resto del plugin: Guardar usando el displayName
-                            bag.addItem(itemStack, template.displayName(), rarity);
+                            // CORRECCIÓN: Guardamos usando de forma estricta la ID ("fishing_cod_large"), unificando criterios
+                            bag.addItemWithoutDiscovery(itemStack, targetId, rarity);
                             p.sendMessage(ColorUtils.format("&a[Tienda] &fComprado y guardado en tu &eInfinibag&f."));
                         }
                     } else {
+                        // Fallback por si pones materiales directos de Minecraft en el menú (ej: STONE)
                         Material mat = Material.matchMaterial(item.getTargetId());
-                        if (mat != null) p.getInventory().addItem(new ItemStack(mat, item.getAmount()));
+                        if (mat != null) {
+                            p.getInventory().addItem(new ItemStack(mat, item.getAmount()));
+                            p.sendMessage(ColorUtils.format("&a[Tienda] &fComprado objeto básico de Minecraft."));
+                        }
                     }
 
                     p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
@@ -153,26 +153,21 @@ public class MenuListener implements Listener {
                 }
             }
             case SELL -> {
-                // 1. Buscamos la plantilla usando el targetId del menú para conocer su displayName real
                 var template = ItemRegistry.getDropTemplates().get(targetId);
 
-                if (template != null) {
-                    String finalBagKey = template.displayName(); // El nombre exacto con el que se guarda en la bolsa
+                // CORRECCIÓN: Buscamos y removemos directamente usando la ID única (targetId) en vez de su nombre visual
+                if (bag.hasItem(targetId, item.getAmount())) {
+                    bag.removeItem(targetId, item.getAmount());
+                    eco.addCoins(p, item.getPrice());
 
-                    // 2. Comprobamos y removemos en la StorageBag usando el nombre visual como clave
-                    if (bag.hasItem(finalBagKey, item.getAmount())) {
-                        bag.removeItem(finalBagKey, item.getAmount());
-                        eco.addCoins(p, item.getPrice());
+                    Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+                    var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : targetId, rarity);
 
-                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
-                        p.sendMessage(ColorUtils.format("&a[Tienda] &fVendiste &7" + item.getAmount() + "x " + finalBagKey + " &fpor &e$" + item.getPrice() + " Monedas&a."));
-                    } else {
-                        p.sendMessage("§cNo tienes suficientes objetos en tu bolsa.");
-                        p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
-                    }
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
+                    p.sendMessage(ColorUtils.format("&a[Tienda] &fVendiste &7" + item.getAmount() + "x ").append(formattedName).append(ColorUtils.format(" &fpor &e$" + item.getPrice() + " Monedas&a.")));
                 } else {
-                    // Fallback por si la id del menú no está registrada en el drops/items.yml
-                    p.sendMessage("§cError: No se pudo encontrar la información del ítem para procesar la venta.");
+                    p.sendMessage("§cNo tienes suficientes objetos en tu bolsa.");
+                    p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
                 }
             }
             case CLOSE -> p.closeInventory();

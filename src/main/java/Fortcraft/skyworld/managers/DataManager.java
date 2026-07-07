@@ -27,7 +27,6 @@ public class DataManager implements Manager {
         dataFolder = new File(Skyworld.getInstance().getDataFolder(), "userdata");
         if (!dataFolder.exists()) dataFolder.mkdirs();
 
-        // Registrar listener de GUIs si no se ha hecho en otro lado
         Bukkit.getPluginManager().registerEvents(new GUIListener(), Skyworld.getInstance());
     }
 
@@ -56,16 +55,16 @@ public class DataManager implements Manager {
 
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
-        // --- 1. ECONOMÍA & STATS ---
+        // --- ECONOMÍA & STATS ---
         data.setCoins(config.getDouble("economy.coins", 0.0));
         data.setStat("combat_level", config.getDouble("stats.combat_level", 1.0));
         data.setStat("mining_level", config.getDouble("stats.mining_level", 1.0));
 
-        // --- 2. DESCUBRIMIENTOS ---
+        // --- DESCUBRIMIENTOS ---
         List<String> discovered = config.getStringList("discovered");
         discovered.forEach(data::discover);
 
-        // --- 3. LOADOUTS ---
+        // --- LOADOUTS ---
         ConfigurationSection loadoutSec = config.getConfigurationSection("loadouts");
         if (loadoutSec != null) {
             for (String modeKey : loadoutSec.getKeys(false)) {
@@ -76,8 +75,6 @@ public class DataManager implements Manager {
                         for (String slotIndexStr : slots.getKeys(false)) {
                             int slotIndex = Integer.parseInt(slotIndexStr);
                             String itemId = slots.getString(slotIndexStr);
-
-                            // Usamos el método de PlayerData para inyectar directo al mapa
                             data.setLoadoutItem(mode, HotbarSlot.fromIndex(slotIndex), itemId);
                         }
                     }
@@ -85,7 +82,7 @@ public class DataManager implements Manager {
             }
         }
 
-        // --- 4. ALMACÉN (STORAGE) ---
+        // --- ALMACÉN (STORAGE) ---
         ConfigurationSection storageSec = config.getConfigurationSection("storage");
         if (storageSec != null) {
             for (String modeKey : storageSec.getKeys(false)) {
@@ -94,14 +91,16 @@ public class DataManager implements Manager {
                     ConfigurationSection itemsInMode = storageSec.getConfigurationSection(modeKey);
 
                     if (itemsInMode != null) {
-                        for (String itemName : itemsInMode.getKeys(false)) {
-                            String matName = itemsInMode.getString(itemName + ".material");
-                            int amount = itemsInMode.getInt(itemName + ".amount");
-                            String rarityName = itemsInMode.getString(itemName + ".rarity", "COMUN");
+                        for (String itemId : itemsInMode.getKeys(false)) {
+                            String matName = itemsInMode.getString(itemId + ".material");
+                            String displayName = itemsInMode.getString(itemId + ".display-name", itemId);
+                            int amount = itemsInMode.getInt(itemId + ".amount");
+                            String rarityName = itemsInMode.getString(itemId + ".rarity", "COMUN");
 
                             if (matName != null) {
                                 data.getStorageBag().loadItem(
-                                        itemName.replace("__", "."), // Restaurar puntos
+                                        itemId,
+                                        displayName,
                                         Material.valueOf(matName),
                                         amount,
                                         mode,
@@ -114,22 +113,17 @@ public class DataManager implements Manager {
             }
         }
 
-        // --- 5. MISIONES Y RASTREO (INTEGRACIÓN) ---
+        // --- MISIONES ---
         data.loadQuestsProgress(config);
 
         return data;
     }
 
-    /**
-     * Asigna ítems por defecto a los modos que no tengan nada configurado.
-     */
     private void applyDefaultKits(PlayerData data) {
-        // Kit Global (Aventura)
         if (data.getLoadoutForMode(PlayerMode.GLOBAL).isEmpty()) {
             data.setLoadoutItem(PlayerMode.GLOBAL, HotbarSlot.PRIMARY, "novice_sword");
             data.setLoadoutItem(PlayerMode.GLOBAL, HotbarSlot.CONSUMABLE_1, "apple");
         }
-
         if (data.getLoadoutForMode(PlayerMode.MINING).isEmpty()) {
             data.setLoadoutItem(PlayerMode.MINING, HotbarSlot.SUPPORT, "novice_pickaxe");
         }
@@ -139,15 +133,11 @@ public class DataManager implements Manager {
         File file = new File(dataFolder, data.getUuid() + ".yml");
         FileConfiguration config = new YamlConfiguration();
 
-        // --- GUARDAR ECONOMÍA & STATS ---
         config.set("economy.coins", data.getCoins());
         config.set("stats.combat_level", data.getStat("combat_level"));
         config.set("stats.mining_level", data.getStat("mining_level"));
-
-        // --- GUARDAR DESCUBRIMIENTOS ---
         config.set("discovered", new ArrayList<>(data.getDiscoveredItems()));
 
-        // --- GUARDAR LOADOUTS ---
         for (PlayerMode mode : PlayerMode.values()) {
             Map<Integer, String> loadout = data.getLoadoutForMode(mode);
             if (loadout == null || loadout.isEmpty()) continue;
@@ -157,22 +147,20 @@ public class DataManager implements Manager {
             });
         }
 
-        // --- GUARDAR ALMACÉN ---
+        // Se guarda ahora directo con el itemId
         StorageBag bag = data.getStorageBag();
         bag.getCategorizedContents().forEach((mode, items) -> {
             if (items.isEmpty()) return;
 
-            items.forEach((name, itemData) -> {
-                String safeName = name.replace(".", "__");
-                String path = "storage." + mode.name() + "." + safeName;
-
+            items.forEach((itemId, itemData) -> {
+                String path = "storage." + mode.name() + "." + itemId;
                 config.set(path + ".material", itemData.getMaterial().name());
+                config.set(path + ".display-name", itemData.getDisplayName());
                 config.set(path + ".amount", itemData.getAmount());
                 config.set(path + ".rarity", itemData.getRarity().name());
             });
         });
 
-        // --- GUARDAR MISIONES Y RASTREO (INTEGRACIÓN) ---
         data.saveQuestsProgress(config);
 
         try {

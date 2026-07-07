@@ -21,7 +21,7 @@ public class ForagingBiome {
 
     // Mapa de listas para soportar múltiples drops por tronco/bloque de madera
     private final Map<Material, List<ForagingDrop>> drops = new HashMap<>();
-    private final Set<String> uniqueSourceIds = new HashSet<>();
+    private final Set<String> uniqueSourceIds = new HashSet<>(); // Ahora guardará IDs
 
     public ForagingBiome(String id, ConfigurationSection config) {
         this.id = id;
@@ -34,24 +34,24 @@ public class ForagingBiome {
                 Material sourceMat = Material.valueOf(blockKey.toUpperCase());
                 ConfigurationSection blockSec = logsSec.getConfigurationSection(blockKey);
 
+                String sourceId = blockKey.toLowerCase(); // ID Único de la fuente
                 String sourceName = blockSec.getString("name", blockKey);
                 int defRegen = blockSec.getInt("regen_time", 5);
 
                 List<ForagingDrop> blockDrops = new ArrayList<>();
                 ConfigurationSection dropsListSec = blockSec.getConfigurationSection("drops");
 
-                // Mapeo adaptado al nuevo sistema global sin duplicación de atributos visuales
                 if (dropsListSec != null) {
                     for (String dropId : dropsListSec.getKeys(false)) {
                         ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
 
-                        // El dropId o un item_id explícito define el vínculo con drops.yml
                         String itemId = singleDropSec.getString("item_id", dropId);
                         double weight = singleDropSec.getDouble("weight", 10.0);
                         int amount = singleDropSec.getInt("amount", 1);
 
                         ForagingDrop drop = new ForagingDrop(
                                 sourceMat,
+                                sourceId,
                                 sourceName,
                                 itemId,
                                 weight,
@@ -64,7 +64,7 @@ public class ForagingBiome {
 
                 if (!blockDrops.isEmpty()) {
                     drops.put(sourceMat, blockDrops);
-                    uniqueSourceIds.add(LogbookGUI.getCleanId(sourceName));
+                    uniqueSourceIds.add(sourceId); // Guardamos la ID estricta
                 }
             }
         }

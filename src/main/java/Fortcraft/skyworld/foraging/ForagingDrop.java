@@ -10,13 +10,15 @@ import org.bukkit.inventory.ItemStack;
 public class ForagingDrop {
     private final Material sourceMaterial;
     private final String sourceName;
+    private final String sourceId;
     private final String itemId;
     private final double weight;
     private final int amount;
     private final int regenTime;
 
-    public ForagingDrop(Material sourceMaterial, String sourceName, String itemId, double weight, int amount, int regenTime) {
+    public ForagingDrop(Material sourceMaterial, String sourceId, String sourceName, String itemId, double weight, int amount, int regenTime) {
         this.sourceMaterial = sourceMaterial;
+        this.sourceId = sourceId;
         this.sourceName = sourceName;
         this.itemId = itemId;
         this.weight = weight;
@@ -39,11 +41,14 @@ public class ForagingDrop {
         var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
         var playerData = dataManager.getPlayerData(player.getUniqueId());
 
-        playerData.getStorageBag().addItem(item, sourceName, itemRarity);
+        playerData.discover(player.getUniqueId(), this.sourceId, this.sourceName);
+
+        playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
     }
 
     public Material getSourceMaterial() { return sourceMaterial; }
     public String getName() { return sourceName; }
+    public String getSourceId() { return sourceId; }
     public String itemId() { return itemId; }
     public double getWeight() { return weight; }
     public int getAmount() { return amount; }

@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Map;
+import java.util.Objects;
 
 import static Fortcraft.skyworld.logbook.LogbookGUI.getCleanId;
 
@@ -21,20 +22,16 @@ public class FishingDrop {
     private final String groupId;
     private final String groupName;
     private final double weight;
-    private final int minigameRarity;
     private final int slot;
-    private final String size;
     private final Rarity speciesRarity;
 
     public FishingDrop(String itemId, String groupId, String groupName,
-                       double weight, int sizeNum, int slot, Rarity speciesRarity, String size) {
+                       double weight, int slot, Rarity speciesRarity) {
         this.itemId = itemId;
         this.groupId = groupId;
         this.groupName = groupName;
         this.weight = weight;
-        this.minigameRarity = sizeNum;
         this.slot = slot;
-        this.size = size;
         this.speciesRarity = speciesRarity;
     }
 
@@ -46,24 +43,51 @@ public class FishingDrop {
         ItemStack item = ItemRegistry.build(itemId);
         if (item == null) return;
 
-        // INYECCIÓN DE TAMAÑO: Si tiene un tamaño asignado, modificamos el nombre del Drop permanentemente
-        if (size != null && !size.isEmpty()) {
+        // Obtención dinámica del tamaño para el nombre visual
+        String currentSize = getSize();
+        if (currentSize != null && !currentSize.isEmpty()) {
             ItemMeta meta = item.getItemMeta();
             if (meta != null && meta.hasDisplayName()) {
-                // Añadimos " (S)" manteniendo el formato y el color original del ItemMeta
-                meta.displayName(meta.displayName().append(Component.text(" (" + size + ")")));
+                meta.displayName(meta.displayName().append(Component.text(" (" + currentSize + ")")));
                 item.setItemMeta(meta);
             }
         }
 
         Rarity itemRarity = getSpeciesRarity();
 
-        playerData.getStorageBag().addItem(item, groupId, itemRarity);
-        playerData.discover(getCleanId(this.groupId));
-        playerData.discover(getCleanId(this.itemId));
+        playerData.getStorageBag().addItemWithoutDiscovery(item, this.itemId, itemRarity);
+
+        playerData.discover(player.getUniqueId(), this.groupId.toLowerCase(), this.groupName);
+        playerData.discover(getCleanId(this.itemId).toLowerCase());
     }
 
-    // --- Getters Dinámicos para LogbookGUI ---
+    // --- Getters Dinámicos (Solucionan el orden de carga del servidor) ---
+
+    public int getSizeNum() {
+        var template = ItemRegistry.getDropTemplates().get(itemId);
+        if (template != null && template.customStats() != null) {
+            Number sizeObj = template.customStats().get("size");
+            if (sizeObj != null) {
+                return sizeObj.intValue();
+            }
+        }
+        return 0;
+    }
+
+    public String getSize() {
+        return switch (getSizeNum()) {
+            case 1 -> "S";
+            case 2 -> "M";
+            case 3 -> "L";
+            case 4 -> "XL";
+            default -> "";
+        };
+    }
+
+    public int getRarity() {
+        return (int) (getSizeNum() + speciesRarity.getRarityNumber());
+    }
+
     public Material getMaterial() {
         var template = ItemRegistry.getDropTemplates().get(itemId);
         return template != null ? template.material() : Material.COD;
@@ -73,39 +97,14 @@ public class FishingDrop {
     public String getGroupId() { return groupId; }
     public String getName() { return groupName; }
     public double getWeight() { return weight; }
-    public int getRarity() { return (int) (minigameRarity + speciesRarity.getRarityNumber()); } // Rareza de dificultad del minijuego
     public int getSlot() { return slot; }
     public Rarity getSpeciesRarity() { return speciesRarity; }
-    public String getSize() {return size;}
 
     public static FishingDrop fromConfig(String groupId, String groupName, Rarity speciesRarity, ConfigurationSection variantSection) {
         String itemId = variantSection.getString("item_id", "cod");
         double weight = variantSection.getDouble("weight", 1.0);
         int slot = variantSection.getInt("slot", -1);
 
-        var template = ItemRegistry.getDropTemplates().get(itemId);
-        String sizeStr = "";
-        int sizeNum = 0;
-
-        if (template != null) {
-            Map<String, Double> customStats = template.customStats();
-            if (customStats.get("size") != null){
-                sizeNum = customStats.get("size").intValue();
-            }
-
-            // Extraemos size (numerico a string S,M,L,XL)
-            if (customStats.containsKey("size")) {
-                sizeStr = switch (sizeNum) {
-                    case 1 -> "S";
-                    case 2 -> "M";
-                    case 3 -> "L";
-                    case 4 -> "XL";
-                    case 0 -> ""; // Vacío si es un tamaño atípico o único
-                    default -> "";
-                };
-            }
-        }
-
-        return new FishingDrop(itemId, groupId, groupName, weight, sizeNum, slot, speciesRarity, sizeStr);
+        return new FishingDrop(itemId, groupId, groupName, weight, slot, speciesRarity);
     }
 }
