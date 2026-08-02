@@ -2,6 +2,7 @@ name: Skyworld
 version: '1.3-SNAPSHOT'
 main: Fortcraft.skyworld.Skyworld
 api-version: '1.21'
+load: POSTWORLD
 commands:
   pathtool:
     description: Entrega la herramienta de administración para la creación de redes de grafos.

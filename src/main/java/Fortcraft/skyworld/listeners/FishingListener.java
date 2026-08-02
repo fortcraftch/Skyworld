@@ -21,6 +21,7 @@ public class FishingListener implements Listener {
 
     @EventHandler
     public void onFish(PlayerFishEvent event) {
+
         Player player = event.getPlayer();
         FishingSession session = manager.getSession(player);
 
@@ -37,6 +38,7 @@ public class FishingListener implements Listener {
             }
 
             case REEL_IN, FAILED_ATTEMPT -> {
+
                 if (session == null || !session.isActive()) {
                     // Solo si no hay minijuego activo
                     manager.handleReel(player);

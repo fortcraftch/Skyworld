@@ -4,7 +4,7 @@ import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.managers.MenuManager;
 import Fortcraft.skyworld.managers.NPCManager;
 import Fortcraft.skyworld.menu.SkyblockMenu;
-import Fortcraft.skyworld.npcs.SkyblockNPC;
+import Fortcraft.skyworld.npcs.SkyBlockNPC;
 import Fortcraft.skyworld.quests.QuestType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -36,14 +36,14 @@ public class NPCListener implements Listener {
         }
 
         Player player = e.getPlayer();
-        SkyblockNPC npc = manager.getNPCById(npcId);
+        SkyBlockNPC npc = manager.getNPCData(npcId);
         if (npc == null) return;
 
         // INYECCIÓN DE MISIÓN: Hablar con el NPC
         Skyworld.getInstance().getManagerHandler().getQuestManager()
                 .handleProgress(player, QuestType.TALK_NPC, npc.getId(), 1);
 
-        String menuType = npc.getMenuType();
+        String menuType = npc.getMenuType().toString();
         MenuManager menuManager = Skyworld.getInstance().getManagerHandler().getMenuManager();
         SkyblockMenu menu = menuManager.getMenu(menuType);
 

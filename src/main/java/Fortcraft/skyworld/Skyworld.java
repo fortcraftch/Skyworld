@@ -1,12 +1,13 @@
 package Fortcraft.skyworld;
 
+import Fortcraft.skyworld.commands.NPCCommand;
 import Fortcraft.skyworld.items.ItemRegistry;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import Fortcraft.skyworld.managers.ManagerHandler;
 import Fortcraft.skyworld.listeners.MobDisplayListener;
-import org.jetbrains.annotations.NotNull;
 
 public final class Skyworld extends JavaPlugin {
 
@@ -16,6 +17,7 @@ public final class Skyworld extends JavaPlugin {
 
     @Override
     public void onEnable() {
+
         instance = this;
 
         saveDefaultConfig();
@@ -27,10 +29,13 @@ public final class Skyworld extends JavaPlugin {
         this.managerHandler = new ManagerHandler();
         this.managerHandler.loadManagers();
 
-        getServer().getPluginManager().registerEvents(
-                new MobDisplayListener(managerHandler.getMobDisplayManager()),
-                this
-        );
+        getServer().getPluginManager().registerEvents(new MobDisplayListener(managerHandler.getMobDisplayManager()), this);
+
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
+
+            commands.registrar().register(NPCCommand.getInstance().addCommands());
+
+        });
 
         getLogger().info("Skyworld Core habilitado correctamente.");
     }
