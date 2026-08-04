@@ -1,7 +1,9 @@
 package Fortcraft.skyworld;
 
 import Fortcraft.skyworld.commands.NPCCommand;
+import Fortcraft.skyworld.commands.PartyCommand;
 import Fortcraft.skyworld.items.ItemRegistry;
+import Fortcraft.skyworld.party.PlayerLeaveListener;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,10 +32,12 @@ public final class Skyworld extends JavaPlugin {
         this.managerHandler.loadManagers();
 
         getServer().getPluginManager().registerEvents(new MobDisplayListener(managerHandler.getMobDisplayManager()), this);
+        getServer().getPluginManager().registerEvents(new PlayerLeaveListener(), this);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
 
             commands.registrar().register(NPCCommand.getInstance().addCommands());
+            commands.registrar().register(PartyCommand.getInstance().addCommands());
 
         });
 

@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.utils;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -20,6 +21,11 @@ public class ColorUtils {
     public static Component format(String text) {
         if (text == null || text.isEmpty()) return Component.empty();
         return parseInternal(text);
+    }
+
+    public static TextComponent setComponent(String message) {
+        return (TextComponent) MiniMessage.miniMessage().deserialize(message).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE).
+                decorationIfAbsent(TextDecoration.BOLD, TextDecoration.State.FALSE);
     }
 
     /**
