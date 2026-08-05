@@ -63,7 +63,7 @@ public class FishingSession {
                 if (template != null && template.customStats() != null) {
                     double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
                     if (expGiven > 0) {
-                        player.giveExp((int) expGiven);
+                        Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(player, "fishing", expGiven);
                     }
                 }
 

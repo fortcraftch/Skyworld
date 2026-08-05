@@ -28,6 +28,8 @@ public class ManagerHandler {
     private NavigationManager navigationManager;
     private QuestManager questManager;
     private StorageManager storageManager;
+    private SkillManager skillManager;
+
 
 
     public void loadManagers() {
@@ -47,6 +49,7 @@ public class ManagerHandler {
         navigationManager = new NavigationManager();
         questManager = new QuestManager();
         storageManager = new StorageManager();
+        skillManager = new SkillManager();
         RespawnManager respawnManager = new RespawnManager(zoneManager);
         MenuAnimationManager menuAnimationManager = new MenuAnimationManager();
 
@@ -66,6 +69,7 @@ public class ManagerHandler {
         managers.add(navigationManager);
         managers.add(questManager);
         managers.add(storageManager);
+        managers.add(skillManager);
         managers.add(respawnManager);
         managers.add(menuAnimationManager);
 
@@ -121,5 +125,6 @@ public class ManagerHandler {
 
     public StorageManager getStorageManager() { return storageManager;}
 
+    public SkillManager getSkillManager() { return skillManager; }
 }
 

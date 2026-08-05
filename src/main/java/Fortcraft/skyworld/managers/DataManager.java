@@ -57,8 +57,18 @@ public class DataManager implements Manager {
 
         // --- ECONOMÍA & STATS ---
         data.setCoins(config.getDouble("economy.coins", 0.0));
-        data.setStat("combat_level", config.getDouble("stats.combat_level", 1.0));
-        data.setStat("mining_level", config.getDouble("stats.mining_level", 1.0));
+        // Lista de todas las habilidades registradas
+        String[] skills = {"combat", "mining", "fishing", "farming", "foraging"};
+
+        for (String skill : skills) {
+            // Cargamos el nivel (por defecto 1)
+            int level = config.getInt("skills." + skill + ".level", 1);
+            data.setSkillLevel(skill, level);
+
+            // Cargamos la XP (por defecto 0.0)
+            double xp = config.getDouble("skills." + skill + ".xp", 0.0);
+            data.setSkillXp(skill, xp);
+        }
 
         // --- DESCUBRIMIENTOS ---
         List<String> discovered = config.getStringList("discovered");
@@ -134,8 +144,12 @@ public class DataManager implements Manager {
         FileConfiguration config = new YamlConfiguration();
 
         config.set("economy.coins", data.getCoins());
-        config.set("stats.combat_level", data.getStat("combat_level"));
-        config.set("stats.mining_level", data.getStat("mining_level"));
+        String[] skills = {"combat", "mining", "fishing", "farming", "foraging"};
+
+        for (String skill : skills) {
+            config.set("skills." + skill + ".level", data.getSkillLevel(skill));
+            config.set("skills." + skill + ".xp", data.getSkillXp(skill));
+        }
         config.set("discovered", new ArrayList<>(data.getDiscoveredItems()));
 
         for (PlayerMode mode : PlayerMode.values()) {

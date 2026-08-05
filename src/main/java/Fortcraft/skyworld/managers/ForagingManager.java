@@ -65,7 +65,7 @@ public class ForagingManager implements Manager {
         if (template != null && template.customStats() != null) {
             double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
             if (expGiven > 0) {
-                p.giveExp((int) expGiven);
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "foraging", expGiven);
             }
         }
 

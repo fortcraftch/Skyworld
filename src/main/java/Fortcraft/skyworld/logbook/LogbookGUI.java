@@ -77,7 +77,7 @@ public class LogbookGUI {
     }
 
     private static void openMiningBiomeView(Player player, MiningBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Capa: " + biome.getDisplayName()));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Capa: " + biome.getDisplayName()));
 
         // Agrupamos todos los drops por el bloque de origen (Material)
         Map<Material, List<MiningDrop>> groupedBySource = biome.getAllDrops().stream()
@@ -123,7 +123,7 @@ public class LogbookGUI {
     }
 
     private static void openFarmBiomeView(Player player, FarmBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Cultivos: " + biome.getDisplayName()));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Cultivos: " + biome.getDisplayName()));
 
         Map<Material, List<FarmDrop>> groupedBySource = biome.getAllDrops().stream()
                 .collect(Collectors.groupingBy(FarmDrop::getSourceBlock));
@@ -164,7 +164,7 @@ public class LogbookGUI {
     }
 
     private static void openForagingBiomeView(Player player, ForagingBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Árboles: " + biome.getDisplayName()));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Árboles: " + biome.getDisplayName()));
 
         Map<Material, List<ForagingDrop>> groupedBySource = biome.getAllDrops().stream()
                 .collect(Collectors.groupingBy(ForagingDrop::getSourceMaterial));
@@ -205,7 +205,7 @@ public class LogbookGUI {
     }
 
     private static void openFishingBiomeView(Player player, FishingBiome biome, PlayerData data) {
-        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("<gray>Bioma: " + biome.getDisplayName()));
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Bioma: " + biome.getDisplayName()));
 
         Map<String, List<FishingDrop>> groupedDrops = biome.getDrops().stream()
                 .collect(Collectors.groupingBy(FishingDrop::getGroupId));

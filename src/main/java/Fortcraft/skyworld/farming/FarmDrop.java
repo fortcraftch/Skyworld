@@ -44,6 +44,8 @@ public class FarmDrop {
         playerData.discover(player.getUniqueId(), this.sourceId, this.sourceName);
 
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
+
+        playerData.queueChatDrop(itemId, amount);
     }
 
     public Material getSourceBlock() { return sourceBlock; }

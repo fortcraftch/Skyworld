@@ -1,0 +1,33 @@
+skills:
+  fishing:
+    max_level: 30
+    progression:
+      base_xp: 100.0
+      multiplier: 1.5
+    levels:
+      # Nivel 2: Solo da dinero
+      '2':
+        money: 500.0
+      # Nivel 5: Da dinero y un ítem (ID del ItemRegistry)
+      '5':
+        money: 1000.0
+        items:
+          - "fishing_rod_upgraded:1" # Formato -> id:cantidad
+      # Nivel 10: Da dinero, ítems y ejecuta un comando (otorga un permiso)
+      '10':
+        money: 2500.0
+        items:
+          - "fishing_nautilus_large:3"
+        commands:
+          - "lp user %player% permission set fortcraft.fishing.tier2 true"
+
+  mining:
+    max_level: 30
+    progression:
+      base_xp: 150.0 # Minería requiere más XP base que pesca
+      multiplier: 1.6
+    levels:
+      '5':
+        money: 1200.0
+        items:
+          - "mining_pickaxe_tier2:1"
