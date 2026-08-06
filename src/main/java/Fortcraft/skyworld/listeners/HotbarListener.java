@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.listeners;
 
 import Fortcraft.skyworld.hotbar.HotbarItems;
+import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.managers.DataManager;
@@ -8,7 +9,6 @@ import Fortcraft.skyworld.managers.HotbarManager;
 import Fortcraft.skyworld.menu.GlobalMenu;
 import Fortcraft.skyworld.storage.StorageGUI;
 import Fortcraft.skyworld.Skyworld;
-import net.kyori.adventure.text.Component;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -140,11 +140,6 @@ public class HotbarListener implements Listener {
             modeChangeCooldowns.put(uuid, now);
             manager.nextMode(p);
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.4f, 1.8f);
-
-            p.sendActionBar(Component.text(
-                    "§7Modo cambiado a: " + manager.getMode(p).getLegacyColor() + manager.getMode(p).getDisplayName()
-            ));
-            return;
         }
 
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {

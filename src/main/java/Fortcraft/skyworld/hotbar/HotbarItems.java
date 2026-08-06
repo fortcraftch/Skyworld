@@ -1,10 +1,9 @@
 package Fortcraft.skyworld.hotbar;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.PlayerMode;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -25,13 +24,13 @@ public class HotbarItems {
     public static ItemStack getLogbook(PlayerMode mode) {
         return createItem(
                 Material.BOOK,
-                mode.getLegacyColor() + "§lBitácora [" + mode.getDisplayName() + "]",
+                mode.getLegacyColor() + "&lBitácora [" + mode.getDisplayName() + "]",
                 TYPE_LOGBOOK,
                 List.of(
-                        "§7Registro de progreso de " + mode.getDisplayName(),
+                        "&7Registro de progreso de " + mode.getDisplayName(),
                         "",
-                        "§eWait click §7para cambiar modo",
-                        "§eRight click §7para abrir"
+                        "&eLeft click &7para cambiar modo",
+                        "&eRight click &7para abrir"
                 )
         );
     }
@@ -39,13 +38,13 @@ public class HotbarItems {
     public static ItemStack getStorage(PlayerMode mode) {
         return createItem(
                 Material.BUNDLE,
-                mode.getLegacyColor() + "§lBolsa [" + mode.getDisplayName() + "]",
+                mode.getLegacyColor() + "&lBolsa [" + mode.getDisplayName() + "]",
                 TYPE_STORAGE,
                 List.of(
-                        "§7Almacenamiento de " + mode.getDisplayName(),
+                        "&7Almacenamiento de " + mode.getDisplayName(),
                         "",
-                        "§eLeft click §7para cambiar modo",
-                        "§eRight click §7para abrir"
+                        "&eLeft click &7para cambiar modo",
+                        "&eRight click &7para abrir"
                 )
         );
     }
@@ -53,13 +52,13 @@ public class HotbarItems {
     public static ItemStack getMenu(PlayerMode mode) {
         return createItem(
                 Material.COMPASS,
-                mode.getLegacyColor() + "§lMenú [" + mode.getDisplayName() + "]",
+                mode.getLegacyColor() + "&lMenú [" + mode.getDisplayName() + "]",
                 TYPE_MENU,
                 List.of(
-                        "§7Opciones de " + mode.getDisplayName(),
+                        "&7Opciones de " + mode.getDisplayName(),
                         "",
-                        "§eLeft click §7para cambiar modo",
-                        "§eRight click §7para abrir"
+                        "&eLeft click &7para cambiar modo",
+                        "&eRight click &7para abrir"
                 )
         );
     }
@@ -69,19 +68,11 @@ public class HotbarItems {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.displayName(LegacyComponentSerializer.legacySection()
-                    .deserialize(name)
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(ColorUtils.format(name));
 
             List<Component> lore = new ArrayList<>();
             for (String line : loreLines) {
-                if (line.isEmpty()) {
-                    lore.add(Component.empty());
-                } else {
-                    lore.add(LegacyComponentSerializer.legacySection()
-                            .deserialize(line)
-                            .decoration(TextDecoration.ITALIC, false));
-                }
+                lore.add(ColorUtils.format(line));
             }
             meta.lore(lore);
 

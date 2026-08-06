@@ -10,6 +10,7 @@ public class Quest {
 
     private int rewardExp;
     private double rewardMoney; // NUEVO: Almacenamiento de dinero de recompensa
+    private String skill;
     private final List<QuestRewardEntry> rewardItems; // Para la Armería
     private final List<QuestRewardEntry> rewardDrops; // Para la Infinibag
 
@@ -28,6 +29,9 @@ public class Quest {
 
     public void setRewardMoney(double rewardMoney) { this.rewardMoney = rewardMoney; }
     public double getRewardMoney() { return rewardMoney; }
+
+    public void setSkill(String skill) { this.skill = skill; }
+    public String getSkill() { return skill; }
 
     public void addRewardItem(String itemId, int amount) { this.rewardItems.add(new QuestRewardEntry(itemId, amount)); }
     public List<QuestRewardEntry> getRewardItems() { return rewardItems; }

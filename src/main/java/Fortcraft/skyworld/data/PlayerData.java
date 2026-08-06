@@ -7,7 +7,6 @@ import Fortcraft.skyworld.utils.HotbarSlot;
 import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.utils.Rarity;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -29,7 +28,7 @@ public class PlayerData {
     private final Map<String, Integer> skillLevels = new HashMap<>();
     private final Map<String, Double> skillXp = new HashMap<>();
 
-    // NUEVO: Sistema de Action Bar y Salud Custom
+    // Sistema de Action Bar y Salud Custom
     private double customHealth = 100.0;
     private double customMaxHealth = 100.0;
     private final Map<String, Double> pendingActionbarXp = new LinkedHashMap<>();
@@ -67,10 +66,9 @@ public class PlayerData {
         skillXp.put(key, getSkillXp(key) + amount);
     }
 
-    // --- NUEVO: ACUMULADOR DE XP PARA ACTION BAR ---
+    // --- ACUMULADOR DE XP PARA ACTION BAR ---
     public void queueActionbarXp(String skill, double amount) {
         String key = skill.toLowerCase();
-        // Si ya hay XP pendiente de esta skill en este segundo, la suma. Si no, crea la entrada al final de la cola.
         pendingActionbarXp.put(key, pendingActionbarXp.getOrDefault(key, 0.0) + amount);
     }
 
@@ -79,7 +77,6 @@ public class PlayerData {
             @Override
             public void run() {
                 Player player = Bukkit.getPlayer(uuid);
-                // Si el jugador se desconecta, cancelamos su reloj personal para no consumir memoria
                 if (player == null || !player.isOnline()) {
                     this.cancel();
                     return;
@@ -91,7 +88,7 @@ public class PlayerData {
                     Map.Entry<String, Double> entry = it.next();
                     String skill = entry.getKey();
                     double amount = entry.getValue();
-                    it.remove(); // Lo eliminamos de la cola (reiniciando su ciclo)
+                    it.remove();
 
                     int currentLevel = getSkillLevel(skill);
                     double currentXp = getSkillXp(skill);
@@ -101,26 +98,24 @@ public class PlayerData {
 
                     String msg;
                     if (currentLevel >= maxLevel) {
-                        msg = String.format("&6&l%s &7| &fNivel &a%d &c(MÁXIMO) &7| &e+%.1f XP", skill.toUpperCase(), currentLevel, amount);
+                        msg = String.format("&6&l%s &7| &fNivel &a%d &b(MÁXIMO) &7| &e+%.1f XP", skill.toUpperCase(), currentLevel, amount);
                     } else {
                         double reqXp = skillManager.getRequiredXpForLevel(skill, currentLevel + 1);
                         msg = String.format("&6&l%s &7| &fNivel &a%d &7| &e+%.1f XP &7(&b%.1f&7/&b%.1f&7)",
                                 skill.toUpperCase(), currentLevel, amount, currentXp, reqXp);
                     }
 
-                    player.spigot().sendMessage(
-                            net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                            net.md_5.bungee.api.chat.TextComponent.fromLegacyText(org.bukkit.ChatColor.translateAlternateColorCodes('&', msg))
-                    );
+                    player.sendActionBar(ColorUtils.format(msg));
 
                 } else {
                     // Si la cola de XP está vacía, mostramos la vida por defecto
                     String msg = String.format("&c❤ %.1f &7/ &c%.1f", customHealth, customMaxHealth);
-                    player.spigot().sendMessage(
-                            net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                            net.md_5.bungee.api.chat.TextComponent.fromLegacyText(org.bukkit.ChatColor.translateAlternateColorCodes('&', msg))
-                    );
+
+                    player.sendActionBar(ColorUtils.format(msg));
                 }
+
+                checkAndFlushDrops(player);
+
             }
         }.runTaskTimer(Fortcraft.skyworld.Skyworld.getInstance(), 20L, 20L); // 20 ticks = 1 segundo
     }
@@ -161,8 +156,8 @@ public class PlayerData {
     }
 
     private void sendDiscoveryNotification(Player player, String friendlyName) {
-        Component mainTitle = LegacyComponentSerializer.legacySection().deserialize("§6§l¡NUEVA ENTRADA!");
-        Component subTitle = LegacyComponentSerializer.legacySection().deserialize("§fHas descubierto: " + friendlyName);
+        Component mainTitle = ColorUtils.format("&6&l¡NUEVA ENTRADA!");
+        Component subTitle = ColorUtils.format("&fHas descubierto: " + friendlyName);
 
         Title title = Title.title(
                 mainTitle, subTitle,
@@ -187,49 +182,32 @@ public class PlayerData {
     }
 
     private final Map<String, Integer> pendingChatDrops = new HashMap<>();
-    private org.bukkit.scheduler.BukkitTask chatDropTask = null;
+    private long lastDropTime = 0;
 
     public void queueChatDrop(String itemId, int amount) {
         pendingChatDrops.put(itemId, pendingChatDrops.getOrDefault(itemId, 0) + amount);
-
-        Player player = Bukkit.getPlayer(uuid);
-        if (player == null || !player.isOnline()) return;
-
-        // Si ya hay una tarea corriendo, la cancelamos para posponer el envío 3 segundos más
-        if (chatDropTask != null) {
-            chatDropTask.cancel();
-        }
-
-        // Programamos la tarea para que se ejecute a los 3 segundos (60 ticks) de inactividad
-        chatDropTask = new org.bukkit.scheduler.BukkitRunnable() {
-            @Override
-            public void run() {
-                flushChatDrops(player);
-            }
-        }.runTaskLater(Fortcraft.skyworld.Skyworld.getInstance(), 40L);
+        lastDropTime = System.currentTimeMillis();
     }
 
-    private void flushChatDrops(Player player) {
+    private void checkAndFlushDrops(Player player) {
         if (pendingChatDrops.isEmpty()) return;
 
-        player.sendMessage(Fortcraft.skyworld.utils.ColorUtils.format("&8&m-----------------------------------"));
-        player.sendMessage(Fortcraft.skyworld.utils.ColorUtils.format("&6&l¡Has recolectado los siguientes recursos!"));
+        if (System.currentTimeMillis() - lastDropTime >= 3000) {
 
-        for (Map.Entry<String, Integer> entry : pendingChatDrops.entrySet()) {
-            String itemId = entry.getKey();
-            int totalAmount = entry.getValue();
+            player.sendMessage(ColorUtils.format("&6¡Añadido a la bolsa!"));
 
-            var template = ItemRegistry.getDropTemplates().get(itemId);
-            Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
-            var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : itemId, rarity);
+            for (Map.Entry<String, Integer> entry : pendingChatDrops.entrySet()) {
+                String itemId = entry.getKey();
+                int totalAmount = entry.getValue();
 
-            player.sendMessage(Fortcraft.skyworld.utils.ColorUtils.format("&7- &3" + totalAmount + "x ").append(formattedName));
+                var template = ItemRegistry.getDropTemplates().get(itemId);
+                Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+                var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : itemId, rarity);
+
+                player.sendMessage(ColorUtils.format("&7[&a+&7] &3" + totalAmount + "x ").append(formattedName));
+            }
+
+            pendingChatDrops.clear();
         }
-
-        player.sendMessage(Fortcraft.skyworld.utils.ColorUtils.format("&8&m-----------------------------------"));
-
-        // Limpiamos el mapa y la referencia de la tarea
-        pendingChatDrops.clear();
-        chatDropTask = null;
     }
 }

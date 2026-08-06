@@ -281,7 +281,6 @@ public class NavigationManager implements Manager {
             return;
         }
         activeGuides.put(player.getUniqueId(), dest);
-        player.sendMessage("§a§l[Guía] §fAhora estás siendo guiado hacia: §b" + dest.getDisplayName());
     }
 
     public void stopGuiding(Player player) {

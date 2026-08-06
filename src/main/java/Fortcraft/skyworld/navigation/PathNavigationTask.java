@@ -68,7 +68,6 @@ public class PathNavigationTask extends BukkitRunnable {
 
         // Condición de llegada: Radio de 2 bloques (4.0 en distancia al cuadrado)
         if (playerLoc.getWorld().equals(targetLoc.getWorld()) && playerLoc.distanceSquared(targetLoc) < 4.0) {
-            player.sendMessage("§a§l[Guía] §f¡Has llegado a tu destino: " + destination.getDisplayName() + "!");
             player.spawnParticle(Particle.HAPPY_VILLAGER, targetLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0);
 
             // INYECCIÓN DE MISIÓN: Llegada al destino físico

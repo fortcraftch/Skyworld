@@ -72,6 +72,7 @@ public class QuestManager implements Manager {
 
             quest.setRewardExp(section.getInt(id + ".rewards.exp", 0));
             quest.setRewardMoney(section.getDouble(id + ".rewards.money", 0.0));
+            quest.setSkill(section.getString(id + ".rewards.skill", "GENERAL"));
 
             // 1. Cargar Ítems destinados a la Armería
             ConfigurationSection itemsSection = section.getConfigurationSection(id + ".rewards.items");
@@ -109,16 +110,28 @@ public class QuestManager implements Manager {
         var dataManager = Skyworld.getInstance().getManagerHandler().getDataManager();
         var playerData = dataManager.getPlayerData(player.getUniqueId());
 
+        player.sendMessage(ColorUtils.format("&6¡Recompensas de la mision!"));
+
         // 1. Recompensa de Experiencia
         if (quest.getRewardExp() > 0) {
-            player.giveExp(quest.getRewardExp());
-            player.sendMessage(ColorUtils.format("&a+ " + quest.getRewardExp() + " EXP de Misión"));
+            String skillType = quest.getSkill();
+
+            if (skillType != null && !skillType.isEmpty()) {
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(player, skillType, quest.getRewardExp());
+
+                player.sendMessage(ColorUtils.format("&7[&a+&7] &b" + quest.getRewardExp() + " XP de " + skillType));
+            } else {
+                // Fallback por si la misión no define ninguna habilidad en el YAML
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(player, "GENERAL", quest.getRewardExp());
+
+                player.sendMessage(ColorUtils.format("&7[&a+&7] " + quest.getRewardExp() + " XP General"));
+            }
         }
 
         // 2. Recompensa de Economía
         if (quest.getRewardMoney() > 0) {
             playerData.addCoins(quest.getRewardMoney());
-            player.sendMessage(ColorUtils.format("&e+ $" + quest.getRewardMoney() + " Monedas"));
+            player.sendMessage(ColorUtils.format("&7[&a+&7] &a$" + quest.getRewardMoney() + " Monedas"));
         }
 
         // 3. CANAL DROPS ➔ Se añaden a la Infinibag (StorageBag) usando ItemRegistry.build
@@ -137,7 +150,7 @@ public class QuestManager implements Manager {
                 // CORRECCIÓN: Guardamos usando la ID única del objeto (ej: "fishing_cod_large"), no por nombre plano
                 playerData.getStorageBag().addItemWithoutDiscovery(itemStack, reward.id(), rarity);
 
-                player.sendMessage(ColorUtils.format("&a+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Añadido a la Bolsa)")));
+                player.sendMessage(ColorUtils.format("&7[&a+&7] &3 " + reward.amount() + "x ").append(formattedName));
             }
         }
 
@@ -156,7 +169,7 @@ public class QuestManager implements Manager {
 
                 // playerData.getArmory().addItem(itemStack, reward.id(), rarity);
 
-                player.sendMessage(ColorUtils.format("&3+ " + reward.amount() + "x ").append(formattedName).append(ColorUtils.format(" &7(Enviado a la Armería)")));
+                player.sendMessage(ColorUtils.format("&7[&a+&7] &3 " + reward.amount() + "x ").append(formattedName));
             }
         }
 
@@ -193,7 +206,7 @@ public class QuestManager implements Manager {
         if (nextIndex >= quest.getStages().size()) {
             progress.setCompleted(true);
             progress.setStageIndex(nextIndex);
-            player.sendMessage("§a§l[Misiones] §f¡Felicidades! Has completado la misión: §b" + quest.getTitle());
+            player.sendMessage("§a[Misiones] §f¡Felicidades! Has completado la misión: §b" + quest.getTitle());
 
             giveQuestRewards(player, quest);
 
@@ -204,7 +217,7 @@ public class QuestManager implements Manager {
         } else {
             progress.setStageIndex(nextIndex);
             QuestStage nextStage = quest.getStages().get(nextIndex);
-            player.sendMessage("§a§l[Misiones] §fSiguiente etapa: §e" + nextStage.getDescription());
+            player.sendMessage("§a[Misiones] §fSiguiente etapa: §e" + nextStage.getDescription());
 
             if (quest.getId().equalsIgnoreCase(trackingQuest.get(player.getUniqueId()))) {
                 updateNavigationGuide(player, nextStage);
@@ -230,7 +243,7 @@ public class QuestManager implements Manager {
         Quest quest = registry.get(questId.toLowerCase());
         PlayerQuestProgress progress = activeQuests.get(questId.toLowerCase());
 
-        player.sendMessage("§b§l[Misiones] §fAhora estás siguiendo la misión: §a" + quest.getTitle());
+        player.sendMessage("§b[Misiones] §fAhora estás siguiendo la misión: §a" + quest.getTitle());
 
         if (progress != null && !progress.isCompleted() && progress.getCurrentStageIndex() < quest.getStages().size()) {
             QuestStage currentStage = quest.getStages().get(progress.getCurrentStageIndex());

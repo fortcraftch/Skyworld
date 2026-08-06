@@ -1,12 +1,12 @@
 package Fortcraft.skyworld.utils;
 
 public enum PlayerMode {
-    GLOBAL("Global", "§f"),
-    COMBAT("Combate", "§c"),
-    FARMING("Granja", "§e"),
-    MINING("Minería", "§6"),
-    FISHING("Pesca", "§b"),
-    FORAGING("Foraging", "§2");
+    GLOBAL("Global", "&f"),
+    COMBAT("Combate", "&c"),
+    FARMING("Granja", "&e"),
+    MINING("Minería", "&6"),
+    FISHING("Pesca", "&b"),
+    FORAGING("Foraging", "&2");
 
     private final String displayName;
     private final String legacyColor;

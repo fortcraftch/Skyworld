@@ -1,12 +1,12 @@
 package Fortcraft.skyworld.storage;
 
 import Fortcraft.skyworld.utils.AnimatedHolder;
+import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.PlayerMode;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -29,7 +29,7 @@ public class StorageGUI {
     public static void open(Player player, StorageBag bag, PlayerMode mode, int page) {
         String titleString = mode.getLegacyColor() + "Almacén: " + mode.getDisplayName() + " (Pág. " + (page + 1) + ")";
 
-        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(titleString);
+        Component titleComponent = ColorUtils.format(titleString);
 
         Inventory inv = Bukkit.createInventory(new AnimatedHolder(), INV_SIZE, titleComponent);
         Map<String, StorageBag.StorageItemData> rawItems = bag.getItemsForMode(mode);
@@ -45,15 +45,10 @@ public class StorageGUI {
 
         // ORDENADO INTELIGENTE
         sortedData.sort((a, b) -> {
-            // 1. Comparar por rareza (El ordinal más alto es Exótico = más importante)
-            // Usamos b.ordinal - a.ordinal para que los más altos salgan PRIMERO
             int rarityCompare = Integer.compare(b.getRarity().ordinal(), a.getRarity().ordinal());
-
             if (rarityCompare != 0) {
                 return rarityCompare;
             }
-
-            // 2. Si tienen la misma rareza, ordenar alfabéticamente
             return a.getDisplayName().compareToIgnoreCase(b.getDisplayName());
         });
 
@@ -93,26 +88,18 @@ public class StorageGUI {
         ItemStack item = new ItemStack(data.getMaterial(), amount);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(LegacyComponentSerializer.legacySection()
-                    .deserialize(data.getDisplayName())
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(ColorUtils.format(data.getDisplayName()));
 
             List<Component> lore = new ArrayList<>();
-            lore.add(LegacyComponentSerializer.legacySection()
-                    .deserialize("§7Total almacenado: §f" + data.getAmount())
-                    .decoration(TextDecoration.ITALIC, false));
-
+            lore.add(ColorUtils.format("&7Total almacenado: &f" + data.getAmount()));
             lore.add(Component.empty());
-            lore.add(LegacyComponentSerializer.legacySection()
-                    .deserialize("§eClick para ver usos/craftear")
-                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(ColorUtils.format("&eClick para ver usos/craftear"));
             meta.lore(lore);
 
             var pdc = meta.getPersistentDataContainer();
 
-            // ID del item para la lógica del almacenamiento
             pdc.set(
-                    new org.bukkit.NamespacedKey("fortcraft", "storage_id"),
+                    new NamespacedKey("fortcraft", "storage_id"),
                     PersistentDataType.STRING,
                     data.getDisplayName()
             );
@@ -127,13 +114,10 @@ public class StorageGUI {
         return item;
     }
 
-    /**
-     * Helper para limpiar los prefijos de color y aislar el nombre base del ítem
-     */
     private static String stripColorCodes(String text) {
         if (text == null) return "";
-        return text.replaceAll("<[^>]*>", "") // Remueve tags MiniMessage
-                .replaceAll("§[0-9a-fklmnorx]", "") // Remueve colores legacy
+        return text.replaceAll("<[^>]*>", "")
+                .replaceAll("§[0-9a-fklmnorx]", "")
                 .replace("&", "")
                 .trim();
     }
@@ -161,24 +145,21 @@ public class StorageGUI {
 
         // --- NAVEGACIÓN ESTÁNDAR ---
         if (currentPage > 0) {
-            inv.setItem(45, createNavButton(Material.ARROW, "§e← Página Anterior", "PREV", currentPage));
+            inv.setItem(45, createNavButton(Material.ARROW, "&e← Página Anterior", "PREV", currentPage));
         }
 
-        inv.setItem(49, createNavButton(Material.BARRIER, "§cCerrar Almacén", "EXIT", currentPage));
+        inv.setItem(49, createNavButton(Material.BARRIER, "&cCerrar Almacén", "EXIT", currentPage));
 
         if (currentPage < maxPages - 1) {
-            inv.setItem(53, createNavButton(Material.ARROW, "§ePágina Siguiente →", "NEXT", currentPage));
+            inv.setItem(53, createNavButton(Material.ARROW, "&ePágina Siguiente →", "NEXT", currentPage));
         }
 
         if (maxPages >= 10) {
-            // Retroceder 5 páginas
             if (currentPage >= 5) {
-                inv.setItem(47, createNavButton(Material.FEATHER, "§b« Retroceder 5 págs.", "PREV_5", currentPage));
+                inv.setItem(47, createNavButton(Material.FEATHER, "&b« Retroceder 5 págs.", "PREV_5", currentPage));
             }
-
-            // Avanzar 5 páginas
             if (currentPage + 5 < maxPages) {
-                inv.setItem(51, createNavButton(Material.FEATHER, "§bAvanzar 5 págs. »", "NEXT_5", currentPage));
+                inv.setItem(51, createNavButton(Material.FEATHER, "&bAvanzar 5 págs. »", "NEXT_5", currentPage));
             }
         }
     }
@@ -188,17 +169,15 @@ public class StorageGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.displayName(LegacyComponentSerializer.legacySection()
-                    .deserialize(name)
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(ColorUtils.format(name));
 
             meta.getPersistentDataContainer().set(
-                    new org.bukkit.NamespacedKey("fortcraft", KEY_ACTION),
+                    new NamespacedKey("fortcraft", KEY_ACTION),
                     PersistentDataType.STRING,
                     action
             );
             meta.getPersistentDataContainer().set(
-                    new org.bukkit.NamespacedKey("fortcraft", KEY_PAGE),
+                    new NamespacedKey("fortcraft", KEY_PAGE),
                     PersistentDataType.INTEGER,
                     currentPage
             );

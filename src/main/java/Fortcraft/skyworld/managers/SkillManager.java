@@ -94,12 +94,14 @@ public class SkillManager implements Manager {
 
         if (section == null) return;
 
+        player.sendMessage(ColorUtils.format("&6¡Recompensas por subir de nivel!"));
+
         // 1. Dinero
         double money = section.getDouble("money", 0.0);
         if (money > 0) {
             var eco = Skyworld.getInstance().getManagerHandler().getEconomyManager();
             eco.addCoins(player, money);
-            player.sendMessage(ColorUtils.format("&a+ $" + money + " Monedas"));
+            player.sendMessage(ColorUtils.format("&7[&a+&7] &a$" + money + " Monedas"));
         }
 
         // 2. Comandos
@@ -128,7 +130,7 @@ public class SkillManager implements Manager {
                 playerData.getStorageBag().addItem(itemStack, itemId, rarity);
 
                 var formattedName = ColorUtils.getAnimatedName(template != null ? template.displayName() : itemId, rarity);
-                player.sendMessage(ColorUtils.format("&3+ " + amount + "x ").append(formattedName).append(ColorUtils.format(" &7(Recompensa)")));
+                player.sendMessage(ColorUtils.format("&7[&a+&7] &3" + amount + "x ").append(formattedName));
             }
         }
     }

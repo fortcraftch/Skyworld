@@ -15,12 +15,12 @@ quests:
         target: "merchant_blocks"
         amount: 1
     rewards:
+      skill: "MINING"       # <--- Tipo de habilidad (ej: MINING, FARMING, COMBAT, FISHING)
       exp: 150
       money: 500.0
       items:
       drops:
         dense_diamond: 4
-        fishing_nautilus_giant: 5
   tutorial_inicio1:
     title: "§bAventura Inicial"
     stages:
@@ -28,18 +28,10 @@ quests:
         type: "VISIT_LOCATION"
         target: "spawn"
         amount: 1
-      - description: "Mina bloques de Carbón en la cantera"
-        type: "MINE_BLOCK"
-        target: "IRON_ORE"
-        amount: 5
-      - description: "Habla con el Alcalde para reportar tu estado"
-        type: "TALK_NPC"
-        target: "merchant_blocks"
-        amount: 1
     rewards:
+      skill: "MINING"       # <--- Tipo de habilidad (ej: MINING, FARMING, COMBAT, FISHING)
       exp: 150
       money: 500.0
       items:
       drops:
         dense_diamond: 4
-        fishing_nautilus_giant: 5

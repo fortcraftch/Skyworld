@@ -1,8 +1,9 @@
 package Fortcraft.skyworld.listeners;
 
 import Fortcraft.skyworld.Skyworld;
-import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.storage.StorageGUI;
+import Fortcraft.skyworld.utils.AnimatedHolder;
+import Fortcraft.skyworld.utils.PlayerMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -10,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -27,9 +29,10 @@ public class StorageListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player player)) return;
 
-        String title = e.getView().getTitle();
-        if (!title.startsWith("§") || !title.contains("Almacén:")) return;
+        // 1. Comprobación segura usando el Holder en lugar de String de título
+        if (!(e.getInventory().getHolder() instanceof AnimatedHolder)) return;
 
+        // 2. Cancelamos SIEMPRE el evento para evitar movimiento de ítems
         e.setCancelled(true);
 
         ItemStack clickedItem = e.getCurrentItem();
@@ -71,6 +74,14 @@ public class StorageListener implements Listener {
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 0.8f);
                 }
             }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent e) {
+        // Bloquea el arrastre de ítems dentro del almacén
+        if (e.getInventory().getHolder() instanceof AnimatedHolder) {
+            e.setCancelled(true);
         }
     }
 }

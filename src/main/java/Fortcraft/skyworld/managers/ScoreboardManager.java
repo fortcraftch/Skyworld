@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.quests.Quest;
 import Fortcraft.skyworld.quests.QuestStage;
@@ -34,7 +35,7 @@ public class ScoreboardManager implements Manager {
         if (bukkitManager == null) return;
 
         Scoreboard board = bukkitManager.getNewScoreboard();
-        Objective obj = board.registerNewObjective("skyworld", Criteria.DUMMY, "§6§lFORTCRAFT");
+        Objective obj = board.registerNewObjective("skyworld", Criteria.DUMMY, ColorUtils.format("&6&lFORTCRAFT"));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         var managerHandler = Skyworld.getInstance().getManagerHandler();
@@ -46,18 +47,18 @@ public class ScoreboardManager implements Manager {
         } catch (NullPointerException ignored) {}
 
         int i = 15;
-        addScore(obj, "§7" + java.time.LocalDate.now(), i--);
-        addScore(obj, "§1 ", i--); // Espacio invisible 1
+        addScore(obj, "&7" + java.time.LocalDate.now(), i--);
+        addScore(obj, "&1 ", i--); // Espacio invisible 1
 
-        addScore(obj, "§fModo:", i--);
+        addScore(obj, "&fModo:", i--);
         addScore(obj, mode.getLegacyColor() + mode.getDisplayName(), i--);
 
-        addScore(obj, "§2 ", i--); // Espacio invisible 2
+        addScore(obj, "&2 ", i--); // Espacio invisible 2
 
-        addScore(obj, "§fMonedas:", i--);
-        addScore(obj, "§e" + String.format("%,.1f", coins) + " ⛁", i--);
+        addScore(obj, "&fMonedas:", i--);
+        addScore(obj, "&e" + String.format("%,.1f", coins) + " ⛁", i--);
 
-        addScore(obj, "§3 ", i--); // Espacio invisible 3
+        addScore(obj, "&3 ", i--); // Espacio invisible 3
 
         // --- SISTEMA DINÁMICO DE MISIONES EN SCOREBOARD ---
         var questManager = managerHandler.getQuestManager();
@@ -69,7 +70,7 @@ public class ScoreboardManager implements Manager {
             PlayerQuestProgress progress = progressMap.get(trackedId);
 
             if (quest != null && progress != null && !progress.isCompleted()) {
-                addScore(obj, "§d📖 Misión:", i--);
+                addScore(obj, "&d📖 Misión:", i--);
 
                 // Cortamos el título si excede los límites estéticos
                 String title = quest.getTitle();
@@ -80,7 +81,7 @@ public class ScoreboardManager implements Manager {
 
                     // Descripción corta del objetivo
                     String desc = stage.getDescription();
-                    addScore(obj, " §7» " + (desc.length() > 22 ? desc.substring(0, 20) + ".." : desc), i--);
+                    addScore(obj, " &7» " + (desc.length() > 22 ? desc.substring(0, 20) + ".." : desc), i--);
 
                     // Lógica del progreso (Porcentaje vs Cantidad Única)
                     if (stage.getRequiredAmount() > 1) {
@@ -89,28 +90,28 @@ public class ScoreboardManager implements Manager {
                         // Ecuación de porcentaje: (actual / requerido) * 100
                         int percentage = (int) (((double) current / required) * 100);
 
-                        addScore(obj, " §fProgreso: §a" + percentage + "%", i--);
+                        addScore(obj, " &fProgreso: &a" + percentage + "%", i--);
                     } else {
                         // Si amount es 1, omitimos el porcentaje y solo mostramos que está pendiente
-                        addScore(obj, " §fProgreso: §cIncompleto", i--);
+                        addScore(obj, " &fProgreso: &cIncompleto", i--);
                     }
                 }
-                addScore(obj, "§5 ", i--); // Espacio dinámico para separar
+                addScore(obj, "&5 ", i--); // Espacio dinámico para separar
             }
         } else {
             // Si no está siguiendo nada, muestra la zona por defecto que ya tenías
-            addScore(obj, "§fZona:", i--);
-            addScore(obj, "§aGlobal", i--);
-            addScore(obj, "§5 ", i--);
+            addScore(obj, "&fZona:", i--);
+            addScore(obj, "&aGlobal", i--);
+            addScore(obj, "&5 ", i--);
         }
 
-        addScore(obj, "§eplay.fortcraft.net", i--);
+        addScore(obj, "&eplay.fortcraft.net", i--);
 
         player.setScoreboard(board);
     }
 
     private void addScore(Objective obj, String text, int score) {
-        Score s = obj.getScore(text);
+        Score s = obj.getScore(ColorUtils.colorize(text));
         s.setScore(score);
     }
 }

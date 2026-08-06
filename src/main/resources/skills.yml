@@ -31,3 +31,24 @@ skills:
         money: 1200.0
         items:
           - "mining_pickaxe_tier2:1"
+
+  farming:
+    max_level: 4
+    progression:
+      base_xp: 10.0
+      multiplier: 1.5
+    levels:
+      # Nivel 2: Solo da dinero
+      '2':
+        money: 500.0
+      # Nivel 5: Da dinero y un ítem (ID del ItemRegistry)
+      '3':
+        money: 1000.0
+        items:
+          - "bloody_beetroot:1" # Formato -> id:cantidad
+          - "dense_lucky_potato:4"
+      # Nivel 10: Da dinero, ítems y ejecuta un comando (otorga un permiso)
+      '4':
+        money: 2500.0
+        commands:
+          - "lp user %player% permission set fortcraft.fishing.tier2 true"
