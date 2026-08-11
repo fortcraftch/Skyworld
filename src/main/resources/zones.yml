@@ -245,7 +245,50 @@ farming_biomes:
             item_id: "dense_common_wheat"
             weight: 10.0
             amount: 1
-
+      CACTUS:
+        name: "Tallo de Cactus"
+        regen_time: 5
+        blocks:
+          CACTUS:
+            drops:
+              cactus:
+                item_id: "cactus"
+                weight: 90.0
+                amount: 1
+              cactus_denso:
+                item_id: "dense_cactus"
+                weight: 10.0
+                amount: 1
+          MOSS_BLOCK:
+            drops:
+              cactus:
+                item_id: "cactus"
+                weight: 90.0
+                amount: 1
+              cactus_denso:
+                item_id: "dense_cactus"
+                weight: 10.0
+                amount: 1
+          CACTUS_FLOWER:
+            drops:
+              cactus:
+                item_id: "cactus"
+                weight: 70.0
+                amount: 1
+              cactus_denso:
+                item_id: "dense_cactus"
+                weight: 30.0
+                amount: 1
+          BIG_DRIPLEAF:
+            drops:
+              cactus:
+                item_id: "cactus"
+                weight: 90.0
+                amount: 1
+              cactus_denso:
+                item_id: "dense_cactus"
+                weight: 10.0
+                amount: 1
   huerto_real:
     display_name: "<gradient:#DEDA4C:#9F950B>Huerto Real"
     icon: GOLDEN_HOE
@@ -403,7 +446,7 @@ zones:
       pos1: { x: 250, y: 60, z: 77 }
       pos2: { x: 243, y: 66, z: 84 }
     farming:
-      biome: huerto_real
+      biome: campo_trigo
     priority: 1
 
   area_test_huerto:
@@ -413,7 +456,7 @@ zones:
       pos1: { x: 258, y: 60, z: 70 }
       pos2: { x: 251, y: 66, z: 76 }
     farming:
-      biome: huerto_real
+      biome: campo_trigo
     priority: 1
 
   bosque_inicial:

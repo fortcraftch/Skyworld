@@ -6,6 +6,7 @@ import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.zones.FarmZone;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -15,6 +16,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FarmManager implements Manager {
+
+    private static final BlockFace[] CHAIN_FACES = {
+            BlockFace.UP, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
+    };
+
+    private static final BlockFace[] SUPPORT_FACES = {
+            BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
+    };
 
     private final Map<Location, Long> pendingRegen = new ConcurrentHashMap<>();
     private final Map<Location, FarmDrop> context = new ConcurrentHashMap<>();
@@ -42,17 +51,50 @@ public class FarmManager implements Manager {
     }
 
     public boolean handleHarvest(Player p, Block block, FarmZone zone) {
-        FarmDrop drop = zone.getBiome().getWeightedDrop(block.getType());
-        if (drop == null) return false;
+        FarmDrop initialDrop = zone.getBiome().getWeightedDrop(block.getType());
+        if (initialDrop == null) return false;
 
-        // 1. Resolver los metadatos globales del item a partir de su ID único
-        var template = ItemRegistry.getDropTemplates().get(drop.itemId());
+        if (isChainableMaterial(block.getType())) {
+            harvestChain(p, block, zone);
+        } else {
+            processSingleHarvest(p, block, initialDrop);
+        }
 
-        // 2. Dar el ítem al almacenamiento usando su identificador global unificado
-        // (Ajusta 'giveToStorage' si requiere el itemId String o el ItemStack generado por la factoría)
+        return true;
+    }
+
+    private void harvestChain(Player p, Block startBlock, FarmZone zone) {
+        Queue<Block> queue = new LinkedList<>();
+        Set<Block> visited = new LinkedHashSet<>();
+
+        queue.add(startBlock);
+        visited.add(startBlock);
+
+        while (!queue.isEmpty()) {
+            Block current = queue.poll();
+            FarmDrop drop = zone.getBiome().getWeightedDrop(current.getType());
+
+            if (drop != null) {
+                processSingleHarvest(p, current, drop);
+            }
+
+            for (BlockFace face : CHAIN_FACES) {
+                Block neighbor = current.getRelative(face);
+
+                if (!visited.contains(neighbor) && zone.contains(neighbor)) {
+                    if (isChainableMaterial(neighbor.getType()) && zone.getBiome().getWeightedDrop(neighbor.getType()) != null) {
+                        visited.add(neighbor);
+                        queue.add(neighbor);
+                    }
+                }
+            }
+        }
+    }
+
+    private void processSingleHarvest(Player p, Block block, FarmDrop drop) {
         drop.giveToStorage(p);
 
-        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
+        var template = ItemRegistry.getDropTemplates().get(drop.itemId());
         if (template != null && template.customStats() != null) {
             double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
             if (expGiven > 0) {
@@ -60,9 +102,14 @@ public class FarmManager implements Manager {
             }
         }
 
-        // 4. Programar la regeneración del cultivo basado en los tiempos del bloque origen
         this.scheduleRegen(block, drop);
-        return true;
+    }
+
+    private boolean isChainableMaterial(Material material) {
+        return material == Material.CACTUS
+                || material == Material.MOSS_BLOCK
+                || material == Material.CACTUS_FLOWER
+                || material == Material.BIG_DRIPLEAF;
     }
 
     private void scheduleRegen(Block block, FarmDrop drop) {
@@ -82,17 +129,53 @@ public class FarmManager implements Manager {
                 if (pendingRegen.isEmpty()) return;
 
                 long now = System.currentTimeMillis();
-                Iterator<Map.Entry<Location, Long>> it = pendingRegen.entrySet().iterator();
 
-                while (it.hasNext()) {
-                    Map.Entry<Location, Long> entry = it.next();
+                // 1. Obtener ubicaciones listas para regenerar
+                List<Location> readyLocations = new ArrayList<>();
+                for (Map.Entry<Location, Long> entry : pendingRegen.entrySet()) {
                     if (now >= entry.getValue()) {
-                        regenerate(entry.getKey());
-                        it.remove();
+                        readyLocations.add(entry.getKey());
                     }
+                }
+
+                if (readyLocations.isEmpty()) return;
+
+                // 2. Ordenar por altura Y de menor a mayor (Base -> Tallo -> Copa)
+                readyLocations.sort(Comparator.comparingInt(Location::getBlockY));
+
+                // 3. Procesar regeneración garantizando soporte inferior y lateral
+                for (Location loc : readyLocations) {
+                    // Si no tiene ningún bloque sólido ni restaurado que le sirva de soporte (abajo o lados), se aplaza
+                    if (!hasSupport(loc)) {
+                        continue;
+                    }
+
+                    regenerate(loc);
+                    pendingRegen.remove(loc);
                 }
             }
         }.runTaskTimer(Skyworld.getInstance(), 20L, 20L);
+    }
+
+    /**
+     * Comprueba si la ubicación tiene al menos un bloque de soporte válido (debajo o en los lados)
+     * que ya esté presente en el mundo y no pendiente de regenerar.
+     */
+    private boolean hasSupport(Location loc) {
+        for (BlockFace face : SUPPORT_FACES) {
+            Location neighborLoc = loc.clone().add(face.getModX(), face.getModY(), face.getModZ());
+
+            // Si el vecino está pendiente de regenerar, no sirve como soporte aún
+            if (pendingRegen.containsKey(neighborLoc)) {
+                continue;
+            }
+
+            // Si el vecino en el mundo no es AIRE, sirve como soporte
+            if (!neighborLoc.getBlock().getType().isAir()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void regenerate(Location loc) {
@@ -102,7 +185,6 @@ public class FarmManager implements Manager {
         Block block = loc.getBlock();
         block.setType(drop.getSourceBlock(), false);
 
-        // Si el bloque implementa la interfaz Ageable (como el Trigo, Zanahorias, etc.), lo forzamos a su etapa final madura
         if (block.getBlockData() instanceof Ageable ageable) {
             ageable.setAge(ageable.getMaximumAge());
             block.setBlockData(ageable);

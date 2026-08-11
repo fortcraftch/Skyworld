@@ -168,6 +168,30 @@ dense_bloody_beetroot:
     buy_price: 100.0
     exp_given: 10.0
 
+cactus:
+  material: CACTUS
+  name: "Cactus"
+  rarity: ESPECIAL
+  category: FARMING
+  lore:
+    - "&7Un cactus."
+  custom_stats:
+    sell_price: 20.0
+    buy_price: 10.0
+    exp_given: 1.0
+
+dense_cactus:
+  material: GREEN_CONCRETE
+  name: "Cactus Denso"
+  rarity: RARO
+  category: FARMING
+  lore:
+    - "&7Destilado puro y denso de cactus."
+  custom_stats:
+    sell_price: 200.0
+    buy_price: 10.0
+    exp_given: 10.0
+
 # --- DROPS DE TALA (FORAGING) ---
 oak_timber:
   material: OAK_LOG

@@ -1,10 +1,8 @@
 package Fortcraft.skyworld.farming;
 
-import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -12,16 +10,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 public class FarmBiome {
     private final String id;
     private final String displayName;
     private final Material icon;
 
-    // Cambiado a Map de Listas para soportar múltiples drops por cultivo
+    // Guarda los drops mapeados por Material de cada bloque individual
     private final Map<Material, List<FarmDrop>> drops = new HashMap<>();
-    private final Set<String> uniqueSourceIds = new HashSet<>(); // Ahora guardará IDs
+    private final Set<String> uniqueSourceIds = new HashSet<>();
 
     public FarmBiome(String id, ConfigurationSection config) {
         this.id = id;
@@ -30,51 +27,70 @@ public class FarmBiome {
 
         ConfigurationSection cropsSec = config.getConfigurationSection("crops");
         if (cropsSec != null) {
-            for (String blockKey : cropsSec.getKeys(false)) {
-                Material sourceMat = Material.valueOf(blockKey.toUpperCase());
-                ConfigurationSection cropSec = cropsSec.getConfigurationSection(blockKey);
+            for (String cropKey : cropsSec.getKeys(false)) {
+                ConfigurationSection cropSec = cropsSec.getConfigurationSection(cropKey);
+                if (cropSec == null) continue;
 
-                String sourceId = blockKey.toLowerCase(); // ID Único de la fuente
-                String sourceName = cropSec.getString("name", blockKey);
+                String sourceId = cropKey.toLowerCase(); // ID único ("cactus", "wheat", etc.)
+                String sourceName = cropSec.getString("name", cropKey);
                 int defRegen = cropSec.getInt("regen_time", 5);
 
-                List<FarmDrop> cropDrops = new ArrayList<>();
-                ConfigurationSection dropsListSec = cropSec.getConfigurationSection("drops");
+                ConfigurationSection blocksSec = cropSec.getConfigurationSection("blocks");
 
-                // Cambia la lectura interna del bucle del constructor en FarmBiome por esto:
-                if (dropsListSec != null) {
-                    for (String dropId : dropsListSec.getKeys(false)) {
-                        ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
+                if (blocksSec != null) {
+                    // Cultivo compuesto por múltiples bloques (Cactus)
+                    for (String blockMatKey : blocksSec.getKeys(false)) {
+                        Material sourceMat = Material.valueOf(blockMatKey.toUpperCase());
+                        ConfigurationSection blockSec = blocksSec.getConfigurationSection(blockMatKey);
+                        if (blockSec == null) continue;
 
-                        // El dropId de la sección o una key explícita será el itemId unificado
-                        String itemId = singleDropSec.getString("item_id", dropId);
-                        double weight = singleDropSec.getDouble("weight", 10.0);
-                        int amount = singleDropSec.getInt("amount", 1);
-
-                        FarmDrop drop = new FarmDrop(
-                                sourceMat,
-                                sourceId,
-                                sourceName,
-                                itemId,
-                                weight,
-                                amount,
-                                defRegen
-                        );
-                        cropDrops.add(drop);
+                        List<FarmDrop> cropDrops = parseDrops(blockSec, sourceMat, sourceId, sourceName, defRegen);
+                        if (!cropDrops.isEmpty()) {
+                            drops.put(sourceMat, cropDrops);
+                        }
+                    }
+                } else {
+                    // Cultivo simple de un solo bloque (Trigo, Zanahoria, etc.)
+                    Material sourceMat = Material.valueOf(cropKey.toUpperCase());
+                    List<FarmDrop> cropDrops = parseDrops(cropSec, sourceMat, sourceId, sourceName, defRegen);
+                    if (!cropDrops.isEmpty()) {
+                        drops.put(sourceMat, cropDrops);
                     }
                 }
 
-                if (!cropDrops.isEmpty()) {
-                    drops.put(sourceMat, cropDrops);
-                    uniqueSourceIds.add(sourceId); // Guardamos la ID estricta
-                }
+                // Guardamos la ID del cultivo para el conteo global
+                uniqueSourceIds.add(sourceId);
             }
         }
     }
 
-    /**
-     * Selecciona un drop aleatorio basado en los pesos del cultivo.
-     */
+    private List<FarmDrop> parseDrops(ConfigurationSection section, Material sourceMat, String sourceId, String sourceName, int defRegen) {
+        List<FarmDrop> cropDrops = new ArrayList<>();
+        ConfigurationSection dropsListSec = section.getConfigurationSection("drops");
+        if (dropsListSec != null) {
+            for (String dropId : dropsListSec.getKeys(false)) {
+                ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
+                if (singleDropSec == null) continue;
+
+                String itemId = singleDropSec.getString("item_id", dropId);
+                double weight = singleDropSec.getDouble("weight", 10.0);
+                int amount = singleDropSec.getInt("amount", 1);
+
+                FarmDrop drop = new FarmDrop(
+                        sourceMat,
+                        sourceId,
+                        sourceName,
+                        itemId,
+                        weight,
+                        amount,
+                        defRegen
+                );
+                cropDrops.add(drop);
+            }
+        }
+        return cropDrops;
+    }
+
     public FarmDrop getWeightedDrop(Material source) {
         List<FarmDrop> possibleDrops = drops.get(source);
         if (possibleDrops == null || possibleDrops.isEmpty()) return null;
@@ -97,10 +113,18 @@ public class FarmBiome {
     public String getId() { return id; }
     public String getDisplayName() { return displayName; }
 
+    /**
+     * Devuelve todos los drops únicos por rareza/ítem del bioma.
+     */
     public Collection<FarmDrop> getAllDrops() {
-        return drops.values().stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
+        Map<String, FarmDrop> uniqueDrops = new LinkedHashMap<>();
+        for (List<FarmDrop> dropList : drops.values()) {
+            for (FarmDrop drop : dropList) {
+                String key = drop.getSourceId() + ":" + drop.itemId();
+                uniqueDrops.putIfAbsent(key, drop);
+            }
+        }
+        return uniqueDrops.values();
     }
 
     public ItemStack getGuiIcon(int discoveredCount) {
