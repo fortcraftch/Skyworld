@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.managers;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.excavation.ExcavationBiome;
 import Fortcraft.skyworld.farming.FarmBiome;
 import Fortcraft.skyworld.fishing.FishingBiome;
 import Fortcraft.skyworld.fishing.FishingDrop;
@@ -19,6 +20,7 @@ public class ZoneManager implements Manager {
     private final Map<String, MiningBiome> miningBiomes = new HashMap<>();
     private final Map<String, FarmBiome> farmBiomes = new HashMap<>();
     private final Map<String, ForagingBiome> foragingBiomes = new HashMap<>();
+    private final Map<String, ExcavationBiome> excavationBiomes = new HashMap<>();
     private int taskId = -1;
 
     @Override
@@ -34,7 +36,6 @@ public class ZoneManager implements Manager {
         if (taskId != -1) {
             Bukkit.getScheduler().cancelTask(taskId);
         }
-        // Si tienes otros métodos de limpieza en MobZone o MiningZone, llámalos aquí
         zones.clear();
     }
 
@@ -103,6 +104,18 @@ public class ZoneManager implements Manager {
 
     public Collection<ForagingBiome> getAllForagingBiomes() {
         return foragingBiomes.values();
+    }
+
+    public void addExcavationBiome(String id, ExcavationBiome biome) {
+        excavationBiomes.put(id, biome);
+    }
+
+    public ExcavationBiome getExcavationBiome(String id) {
+        return excavationBiomes.get(id);
+    }
+
+    public Collection<ExcavationBiome> getAllExcavationBiomes() {
+        return excavationBiomes.values();
     }
 
     private void startTicker() {

@@ -38,9 +38,9 @@ public class GUIListener implements Listener {
 
         // -----------------------------------------------------------
         // CASO 1: BITÁCORA (Navegación y Biomas)
-        // Añadimos "Capa:" para que detecte también los biomas de minería
+        // Añadimos "Yacimientos:" para el sistema de excavación
         // -----------------------------------------------------------
-        if (title.contains("Bitácora") || title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:")) {
+        if (title.contains("Bitácora") || title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:") || title.contains("Yacimientos:")) {
             e.setCancelled(true); // Nadie puede robar items de la bitácora
             handleLogbookClick(e, title); // Pasamos el título para detectar el modo
         }
@@ -61,9 +61,11 @@ public class GUIListener implements Listener {
             currentMode = PlayerMode.FARMING;
         } else if (title.contains("Foraging") || title.contains("Árboles:")) {
             currentMode = PlayerMode.FORAGING;
+        } else if (title.contains("Arqueologia") || title.contains("Yacimientos:")) {
+            currentMode = PlayerMode.EXCAVATION;
         }
 
-        // A) CAMBIAR DE MODO (Desde Global a Pesca/Minería)
+        // A) CAMBIAR DE MODO (Desde Global a Profesiones)
         if (meta.getPersistentDataContainer().has(Skyworld.getKey("change_mode"), PersistentDataType.STRING)) {
             String modeStr = meta.getPersistentDataContainer().get(Skyworld.getKey("change_mode"), PersistentDataType.STRING);
             PlayerMode targetMode = PlayerMode.valueOf(modeStr);
@@ -85,7 +87,7 @@ public class GUIListener implements Listener {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
 
             // Si estamos dentro de un bioma específico, volvemos a la lista de biomas
-            if (title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:")) {
+            if (title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:") || title.contains("Yacimientos:")) {
                 LogbookGUI.open(p, currentMode, null);
             } else {
                 // Si estamos en la lista de biomas, volvemos al menú GLOBAL

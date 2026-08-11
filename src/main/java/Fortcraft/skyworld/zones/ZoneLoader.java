@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.zones;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.excavation.ExcavationBiome;
 import Fortcraft.skyworld.farming.FarmBiome;
 import Fortcraft.skyworld.fishing.FishingBiome;
 import Fortcraft.skyworld.foraging.ForagingBiome;
@@ -35,6 +36,7 @@ public class ZoneLoader {
         FarmManager farmingManager = handler.getFarmManager();
         ForagingManager foragingManager = handler.getForagingManager();
         RegionManager regionManager = handler.getRegionManager();
+        ExcavationManager excavationManager = handler.getExcavationManager();
 
         // 3. Iterar y cargar
         loadBiomas(zoneManager);
@@ -60,7 +62,6 @@ public class ZoneLoader {
                     zoneManager.registerZone(mobZone);
                 }
                 case "FISHING" -> {
-                    // Pasamos la sección completa por si FishingZone necesita el 'world' o 'type'
                     FishingZone fishingZone = new FishingZone(id, world, box, z.getConfigurationSection("fishing"));
                     zoneManager.registerZone(fishingZone);
                     fishingManager.registerZone(fishingZone);
@@ -80,6 +81,11 @@ public class ZoneLoader {
                     zoneManager.registerZone(foragingZone);
                     foragingManager.registerZone(foragingZone);
                 }
+                case "EXCAVATION" -> {
+                    ExcavationZone excavationZone = new ExcavationZone(id, world, box, z.getConfigurationSection("excavation"));
+                    zoneManager.registerZone(excavationZone);
+                    excavationManager.registerZone(excavationZone);
+                }
                 case "REGION" -> {
                     RegionZone regionZone = RegionZone.fromConfig(id, world, box, z.getConfigurationSection("region"));
                     zoneManager.registerZone(regionZone);
@@ -91,12 +97,11 @@ public class ZoneLoader {
 
     private static void loadBiomas(ZoneManager zoneManager) {
         ConfigurationSection biomesSec = zonesConfig.getConfigurationSection("fishing_biomes");
-        if (biomesSec == null) return;
-
-        for (String key : biomesSec.getKeys(false)) {
-            // Creamos el objeto Bioma y lo registramos en el Manager
-            FishingBiome biome = new FishingBiome(key, biomesSec.getConfigurationSection(key));
-            zoneManager.addFishingBiome(key, biome);
+        if (biomesSec != null) {
+            for (String key : biomesSec.getKeys(false)) {
+                FishingBiome biome = new FishingBiome(key, biomesSec.getConfigurationSection(key));
+                zoneManager.addFishingBiome(key, biome);
+            }
         }
 
         ConfigurationSection miningSec = zonesConfig.getConfigurationSection("mining_biomes");
@@ -120,6 +125,14 @@ public class ZoneLoader {
             for (String key : foragingSec.getKeys(false)) {
                 ForagingBiome biome = new ForagingBiome(key, foragingSec.getConfigurationSection(key));
                 zoneManager.addForagingBiome(key, biome);
+            }
+        }
+
+        ConfigurationSection excavationSec = zonesConfig.getConfigurationSection("excavation_biomes");
+        if (excavationSec != null) {
+            for (String key : excavationSec.getKeys(false)) {
+                ExcavationBiome biome = new ExcavationBiome(key, excavationSec.getConfigurationSection(key));
+                zoneManager.addExcavationBiome(key, biome);
             }
         }
     }

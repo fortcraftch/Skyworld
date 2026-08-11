@@ -6,7 +6,8 @@ public enum PlayerMode {
     FARMING("Granja", "&e"),
     MINING("Minería", "&6"),
     FISHING("Pesca", "&b"),
-    FORAGING("Foraging", "&2");
+    FORAGING("Foraging", "&2"),
+    EXCAVATION("Arqueologia", "&e");
 
     private final String displayName;
     private final String legacyColor;

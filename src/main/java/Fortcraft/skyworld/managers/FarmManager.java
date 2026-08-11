@@ -3,11 +3,14 @@ package Fortcraft.skyworld.managers;
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.farming.FarmDrop;
 import Fortcraft.skyworld.items.ItemRegistry;
+import Fortcraft.skyworld.listeners.FarmPhysicsListener;
 import Fortcraft.skyworld.zones.FarmZone;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Dripleaf;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -27,12 +30,14 @@ public class FarmManager implements Manager {
 
     private final Map<Location, Long> pendingRegen = new ConcurrentHashMap<>();
     private final Map<Location, FarmDrop> context = new ConcurrentHashMap<>();
+    private final Map<Location, BlockData> savedBlockData = new ConcurrentHashMap<>();
     private final List<FarmZone> zones = new ArrayList<>();
     private BukkitTask regenTask;
 
     @Override
     public void load() {
         startTask();
+        Bukkit.getPluginManager().registerEvents(new FarmPhysicsListener(this), Skyworld.getInstance());
     }
 
     @Override
@@ -47,6 +52,7 @@ public class FarmManager implements Manager {
 
         pendingRegen.clear();
         context.clear();
+        savedBlockData.clear();
         zones.clear();
     }
 
@@ -105,7 +111,7 @@ public class FarmManager implements Manager {
         this.scheduleRegen(block, drop);
     }
 
-    private boolean isChainableMaterial(Material material) {
+    public boolean isChainableMaterial(Material material) {
         return material == Material.CACTUS
                 || material == Material.MOSS_BLOCK
                 || material == Material.CACTUS_FLOWER
@@ -119,6 +125,9 @@ public class FarmManager implements Manager {
         pendingRegen.put(loc, respawnTime);
         context.put(loc, drop);
 
+        // Guardamos una copia exacta de las propiedades del bloque (orientación, facing, etc.)
+        savedBlockData.put(loc, block.getBlockData().clone());
+
         block.setType(Material.AIR, false);
     }
 
@@ -130,7 +139,6 @@ public class FarmManager implements Manager {
 
                 long now = System.currentTimeMillis();
 
-                // 1. Obtener ubicaciones listas para regenerar
                 List<Location> readyLocations = new ArrayList<>();
                 for (Map.Entry<Location, Long> entry : pendingRegen.entrySet()) {
                     if (now >= entry.getValue()) {
@@ -140,12 +148,9 @@ public class FarmManager implements Manager {
 
                 if (readyLocations.isEmpty()) return;
 
-                // 2. Ordenar por altura Y de menor a mayor (Base -> Tallo -> Copa)
                 readyLocations.sort(Comparator.comparingInt(Location::getBlockY));
 
-                // 3. Procesar regeneración garantizando soporte inferior y lateral
                 for (Location loc : readyLocations) {
-                    // Si no tiene ningún bloque sólido ni restaurado que le sirva de soporte (abajo o lados), se aplaza
                     if (!hasSupport(loc)) {
                         continue;
                     }
@@ -157,20 +162,14 @@ public class FarmManager implements Manager {
         }.runTaskTimer(Skyworld.getInstance(), 20L, 20L);
     }
 
-    /**
-     * Comprueba si la ubicación tiene al menos un bloque de soporte válido (debajo o en los lados)
-     * que ya esté presente en el mundo y no pendiente de regenerar.
-     */
     private boolean hasSupport(Location loc) {
         for (BlockFace face : SUPPORT_FACES) {
             Location neighborLoc = loc.clone().add(face.getModX(), face.getModY(), face.getModZ());
 
-            // Si el vecino está pendiente de regenerar, no sirve como soporte aún
             if (pendingRegen.containsKey(neighborLoc)) {
                 continue;
             }
 
-            // Si el vecino en el mundo no es AIRE, sirve como soporte
             if (!neighborLoc.getBlock().getType().isAir()) {
                 return true;
             }
@@ -180,14 +179,18 @@ public class FarmManager implements Manager {
 
     private void regenerate(Location loc) {
         FarmDrop drop = context.remove(loc);
+        BlockData originalData = savedBlockData.remove(loc);
         if (drop == null) return;
 
         Block block = loc.getBlock();
-        block.setType(drop.getSourceBlock(), false);
 
-        if (block.getBlockData() instanceof Ageable ageable) {
-            ageable.setAge(ageable.getMaximumAge());
-            block.setBlockData(ageable);
+        if (originalData != null) {
+            if (originalData instanceof Ageable ageable) {
+                ageable.setAge(ageable.getMaximumAge());
+            }
+            block.setBlockData(originalData, false);
+        } else {
+            block.setType(drop.getSourceBlock(), false);
         }
 
         loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(0.5, 0.3, 0.5), 5, 0.2, 0.2, 0.2, 0.02);

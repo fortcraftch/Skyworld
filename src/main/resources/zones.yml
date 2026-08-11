@@ -246,7 +246,7 @@ farming_biomes:
             weight: 10.0
             amount: 1
       CACTUS:
-        name: "Tallo de Cactus"
+        name: "Cactus"
         regen_time: 5
         blocks:
           CACTUS:

@@ -2,6 +2,8 @@ package Fortcraft.skyworld.logbook;
 
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.data.PlayerData;
+import Fortcraft.skyworld.excavation.ExcavationBiome;
+import Fortcraft.skyworld.excavation.ExcavationDrop;
 import Fortcraft.skyworld.farming.FarmBiome;
 import Fortcraft.skyworld.farming.FarmDrop;
 import Fortcraft.skyworld.fishing.FishingBiome;
@@ -59,6 +61,9 @@ public class LogbookGUI {
             } else if (mode == PlayerMode.FORAGING) {
                 ForagingBiome biome = zoneManager.getForagingBiome(biomeIdContext);
                 if (biome != null) { openForagingBiomeView(player, biome, playerData); return; }
+            } else if (mode == PlayerMode.EXCAVATION) {
+                ExcavationBiome biome = zoneManager.getExcavationBiome(biomeIdContext);
+                if (biome != null) { openExcavationBiomeView(player, biome, playerData); return; }
             }
         }
 
@@ -69,6 +74,7 @@ public class LogbookGUI {
             case MINING -> renderBiomeSelection(inv, zoneManager.getAllMiningBiomes(), playerData);
             case FARMING -> renderBiomeSelection(inv, zoneManager.getAllFarmingBiomes(), playerData);
             case FORAGING -> renderBiomeSelection(inv, zoneManager.getAllForagingBiomes(), playerData);
+            case EXCAVATION -> renderBiomeSelection(inv, zoneManager.getAllExcavationBiomes(), playerData);
             case COMBAT -> inv.setItem(22, createInfoIcon(Material.IRON_SWORD, "&cPróximamente", "&7Derrota enemigos..."));
             case GLOBAL -> renderGlobalStats(inv, playerData, zoneManager);
         }
@@ -76,16 +82,54 @@ public class LogbookGUI {
         startAnimationTask(player, inv);
     }
 
+    private static void openExcavationBiomeView(Player player, ExcavationBiome biome, PlayerData data) {
+        Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Yacimientos: " + biome.getDisplayName()));
+
+        // Asegúrate de que el método en ExcavationDrop se llame así (o cámbialo a getSource() según lo tengas)
+        Map<Material, List<ExcavationDrop>> groupedBySource = biome.getAllDrops().stream()
+                .collect(Collectors.groupingBy(ExcavationDrop::getSource));
+
+        List<Map.Entry<Material, List<ExcavationDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
+        sortedEntries.sort((e1, e2) -> {
+            var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
+            var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
+            Rarity r1 = t1 != null ? Rarity.fromString(t1.rarity()) : Rarity.COMUN;
+            Rarity r2 = t2 != null ? Rarity.fromString(t2.rarity()) : Rarity.COMUN;
+            return Integer.compare(r1.ordinal(), r2.ordinal());
+        });
+
+        int slot = 10;
+        for (Map.Entry<Material, List<ExcavationDrop>> entry : sortedEntries) {
+            List<ExcavationDrop> excavDrops = entry.getValue();
+            ExcavationDrop primary = excavDrops.getFirst();
+            double totalWeight = excavDrops.stream().mapToDouble(ExcavationDrop::getWeight).sum();
+
+            var template = ItemRegistry.getDropTemplates().get(primary.itemId());
+            Material displayMat = primary.getSource();
+            Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
+            ItemStack icon = createDiscoveryIcon(
+                    data.hasDiscovered(primary.getSourceId()),
+                    displayMat,
+                    primary.getName(),
+                    rarity,
+                    getLoreExcavation(excavDrops, totalWeight)
+            );
+            inv.setItem(slot++, icon);
+            if ((slot % 9) == 8) slot += 2;
+        }
+        addBackButton(inv);
+        player.openInventory(inv);
+        startAnimationTask(player, inv);
+    }
+
     private static void openMiningBiomeView(Player player, MiningBiome biome, PlayerData data) {
         Inventory inv = Bukkit.createInventory(new AnimatedHolder(), 54, parse("Capa: " + biome.getDisplayName()));
 
-        // Agrupamos todos los drops por el bloque de origen (Material)
         Map<Material, List<MiningDrop>> groupedBySource = biome.getAllDrops().stream()
                 .collect(Collectors.groupingBy(MiningDrop::getSource));
 
         List<Map.Entry<Material, List<MiningDrop>>> sortedEntries = new ArrayList<>(groupedBySource.entrySet());
-
-        // Ordenamos las fuentes en el menú según la rareza de su PRIMER drop (o el criterio que prefieras)
         sortedEntries.sort((e1, e2) -> {
             var t1 = ItemRegistry.getDropTemplates().get(e1.getValue().getFirst().itemId());
             var t2 = ItemRegistry.getDropTemplates().get(e2.getValue().getFirst().itemId());
@@ -97,21 +141,21 @@ public class LogbookGUI {
         int slot = 10;
         for (Map.Entry<Material, List<MiningDrop>> entry : sortedEntries) {
             List<MiningDrop> blockDrops = entry.getValue();
-            MiningDrop primary = blockDrops.getFirst(); // Tomamos el primer drop como referencia de la fuente
+            MiningDrop primary = blockDrops.getFirst();
             double totalWeight = blockDrops.stream().mapToDouble(MiningDrop::getWeight).sum();
 
             var template = ItemRegistry.getDropTemplates().get(primary.itemId());
-            Material displayMat = primary.getSource(); // El icono del menú será el bloque físico (ej: IRON_ORE)
+            Material displayMat = primary.getSource();
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
             boolean isSourceDiscovered = data.hasDiscovered(primary.getSourceId());
 
             ItemStack icon = createDiscoveryIcon(
                     isSourceDiscovered,
-                    displayMat,          // El bloque (ej: Material.IRON_ORE)
-                    primary.getName(),   // El nombre visual del bloque (ej: "&eMena de Hierro")
+                    displayMat,
+                    primary.getName(),
                     rarity,
-                    getLoreMining(blockDrops, totalWeight) // Muestra los porcentajes de lo que puede dar
+                    getLoreMining(blockDrops, totalWeight)
             );
 
             inv.setItem(slot++, icon);
@@ -147,7 +191,6 @@ public class LogbookGUI {
             Material displayMat = template != null ? template.material() : primary.getSourceBlock();
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
-            // REFACTOR: Usar getSourceId() de la fuente
             ItemStack icon = createDiscoveryIcon(
                     data.hasDiscovered(primary.getSourceId()),
                     displayMat,
@@ -188,7 +231,6 @@ public class LogbookGUI {
             Material displayMat = primary.getSourceMaterial();
             Rarity rarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
 
-            // REFACTOR: Usar getSourceId() de la fuente
             ItemStack icon = createDiscoveryIcon(
                     data.hasDiscovered(primary.getSourceId()),
                     displayMat,
@@ -354,6 +396,9 @@ public class LogbookGUI {
             } else if (biomeObj instanceof ForagingBiome b) {
                 id = b.getId();
                 icon = b.getGuiIcon((int) b.getUniqueSourceIds().stream().filter(data::hasDiscovered).count());
+            } else if (biomeObj instanceof ExcavationBiome b) {
+                id = b.getId();
+                icon = b.getGuiIcon((int) b.getUniqueSourceIds().stream().filter(data::hasDiscovered).count());
             }
 
             if (icon != null) {
@@ -384,10 +429,15 @@ public class LogbookGUI {
         long foragDiscovered = zm.getAllForagingBiomes().stream().flatMap(b -> b.getUniqueSourceIds().stream()).distinct().filter(data::hasDiscovered).count();
         inv.setItem(25, createInfoIcon(Material.IRON_AXE, "&2Foraging", "&7Recursos: &f" + foragDiscovered + "/" + foragTotal));
 
+        long excavTotal = zm.getAllExcavationBiomes().stream().flatMap(b -> b.getUniqueSourceIds().stream()).distinct().count();
+        long excavDiscovered = zm.getAllExcavationBiomes().stream().flatMap(b -> b.getUniqueSourceIds().stream()).distinct().filter(data::hasDiscovered).count();
+        inv.setItem(31, createInfoIcon(Material.BRUSH, "&eArqueologia", "&7Artefactos: &f" + excavDiscovered + "/" + excavTotal));
+
         markAsModeLink(inv.getItem(19), PlayerMode.FISHING);
         markAsModeLink(inv.getItem(21), PlayerMode.MINING);
         markAsModeLink(inv.getItem(23), PlayerMode.FARMING);
         markAsModeLink(inv.getItem(25), PlayerMode.FORAGING);
+        markAsModeLink(inv.getItem(31), PlayerMode.EXCAVATION);
     }
 
     private static void addBackButton(Inventory inv) {
@@ -410,6 +460,24 @@ public class LogbookGUI {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private static @NotNull List<Component> getLoreExcavation(List<ExcavationDrop> blockDrops, double totalWeight) {
+        List<Component> details = new ArrayList<>();
+        details.add(parse("&8Arqueologia"));
+        details.add(Component.empty());
+        details.add(parse("&7Posibles artefactos:"));
+        for (ExcavationDrop d : blockDrops) {
+            double chance = (d.getWeight() / totalWeight) * 100;
+            var template = ItemRegistry.getDropTemplates().get(d.itemId());
+            String dName = template != null ? template.displayName() : d.itemId();
+            Rarity dRarity = template != null ? Rarity.fromString(template.rarity()) : Rarity.COMUN;
+
+            details.add(parse(" &8• ")
+                    .append(dRarity.format(dName))
+                    .append(parse(" &7x" + d.getAmount() + " &f" + String.format("%.1f", chance) + "%")));
+        }
+        return details;
     }
 
     private static @NotNull List<Component> getLoreMining(List<MiningDrop> blockDrops, double totalWeight) {
