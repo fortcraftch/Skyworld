@@ -92,19 +92,63 @@ public class FarmBiome {
     }
 
     public FarmDrop getWeightedDrop(Material source) {
+        return getWeightedDrop(source, 0.0);
+    }
+
+    public FarmDrop getWeightedDrop(Material source, double playerLuck) {
         List<FarmDrop> possibleDrops = drops.get(source);
         if (possibleDrops == null || possibleDrops.isEmpty()) return null;
 
-        double totalWeight = possibleDrops.stream().mapToDouble(FarmDrop::getWeight).sum();
-        double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
+        // Si solo hay un drop posible o el jugador no tiene suerte, usamos el cálculo rápido estándar
+        if (possibleDrops.size() == 1 || playerLuck <= 0) {
+            double totalWeight = possibleDrops.stream().mapToDouble(FarmDrop::getWeight).sum();
+            double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
 
-        double currentWeight = 0;
+            double currentWeight = 0;
+            for (FarmDrop drop : possibleDrops) {
+                currentWeight += drop.getWeight();
+                if (currentWeight >= randomValue) {
+                    return drop;
+                }
+            }
+            return possibleDrops.getFirst();
+        }
+
+        // 1. Encontrar el peso más alto (este será considerado el drop "común")
+        double highestWeight = 0;
         for (FarmDrop drop : possibleDrops) {
-            currentWeight += drop.getWeight();
-            if (currentWeight >= randomValue) {
+            if (drop.getWeight() > highestWeight) {
+                highestWeight = drop.getWeight();
+            }
+        }
+
+        // 2. Recalcular los pesos aplicando la suerte a los ítems raros
+        double totalAdjustedWeight = 0.0;
+        Map<FarmDrop, Double> adjustedWeights = new HashMap<>();
+
+        for (FarmDrop drop : possibleDrops) {
+            double currentWeight = drop.getWeight();
+
+            // Si el drop NO es el más común (tiene un peso menor al máximo), la suerte lo mejora
+            if (currentWeight < highestWeight) {
+                currentWeight = currentWeight * (1.0 + (playerLuck / 100.0));
+            }
+
+            adjustedWeights.put(drop, currentWeight);
+            totalAdjustedWeight += currentWeight;
+        }
+
+        // 3. Tirar el dado con los nuevos pesos inflados
+        double randomValue = ThreadLocalRandom.current().nextDouble() * totalAdjustedWeight;
+        double currentSum = 0;
+
+        for (FarmDrop drop : possibleDrops) {
+            currentSum += adjustedWeights.get(drop);
+            if (currentSum >= randomValue) {
                 return drop;
             }
         }
+
         return possibleDrops.getFirst();
     }
 
@@ -125,6 +169,11 @@ public class FarmBiome {
             }
         }
         return uniqueDrops.values();
+    }
+
+    public boolean hasDrops(Material source) {
+        List<FarmDrop> possibleDrops = drops.get(source);
+        return possibleDrops != null && !possibleDrops.isEmpty();
     }
 
     public ItemStack getGuiIcon(int discoveredCount) {

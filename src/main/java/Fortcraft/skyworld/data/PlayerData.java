@@ -15,6 +15,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerData {
     private final UUID uuid;
@@ -24,9 +25,10 @@ public class PlayerData {
     private final Set<String> discoveredItems = new HashSet<>();
     private final Map<PlayerMode, Map<Integer, String>> loadouts = new HashMap<>();
 
-    // Mapas para gestionar las Skills
+    // Mapas para gestionar las Skills y stats
     private final Map<String, Integer> skillLevels = new HashMap<>();
     private final Map<String, Double> skillXp = new HashMap<>();
+    private final Map<String, Double> currentStats = new ConcurrentHashMap<>();
 
     // Sistema de Action Bar y Salud Custom
     private double customHealth = 100.0;
@@ -55,7 +57,7 @@ public class PlayerData {
     public double getCustomMaxHealth() { return customMaxHealth; }
     public void setCustomMaxHealth(double customMaxHealth) { this.customMaxHealth = customMaxHealth; }
 
-    // --- GETTERS Y SETTERS DE SKILLS ---
+    // --- GETTERS Y SETTERS DE SKILLS Y STATS ---
     public int getSkillLevel(String skill) { return skillLevels.getOrDefault(skill.toLowerCase(), 1); }
     public void setSkillLevel(String skill, int level) { skillLevels.put(skill.toLowerCase(), level); }
 
@@ -64,6 +66,15 @@ public class PlayerData {
     public void addSkillXp(String skill, double amount) {
         String key = skill.toLowerCase();
         skillXp.put(key, getSkillXp(key) + amount);
+    }
+
+    public double getStat(String statName) {
+        return currentStats.getOrDefault(statName.toLowerCase(), 0.0);
+    }
+
+    public void updateCachedStats(Map<String, Double> newStats) {
+        currentStats.clear();
+        currentStats.putAll(newStats);
     }
 
     // --- ACUMULADOR DE XP PARA ACTION BAR ---

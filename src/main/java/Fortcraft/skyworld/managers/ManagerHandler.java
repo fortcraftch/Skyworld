@@ -54,6 +54,7 @@ public class ManagerHandler {
         excavationManager = new ExcavationManager();
         RespawnManager respawnManager = new RespawnManager(zoneManager);
         MenuAnimationManager menuAnimationManager = new MenuAnimationManager();
+        StatManager statManager = new StatManager(dataManager);
 
         managers.add(mobDisplayManager);
         managers.add(zoneManager);
@@ -75,6 +76,7 @@ public class ManagerHandler {
         managers.add(excavationManager);
         managers.add(respawnManager);
         managers.add(menuAnimationManager);
+        managers.add(statManager);
 
         managers.forEach(Manager::load);
 

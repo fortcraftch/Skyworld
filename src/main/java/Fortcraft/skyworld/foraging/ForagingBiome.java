@@ -1,5 +1,6 @@
 package Fortcraft.skyworld.foraging;
 
+import Fortcraft.skyworld.excavation.ExcavationDrop;
 import Fortcraft.skyworld.logbook.LogbookGUI;
 import Fortcraft.skyworld.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
@@ -70,24 +71,65 @@ public class ForagingBiome {
         }
     }
 
-    /**
-     * Selecciona un drop aleatorio basado en los pesos configurados para ese tronco.
-     */
     public ForagingDrop getWeightedDrop(Material source) {
+        return getWeightedDrop(source, 0.0);
+    }
+
+    public ForagingDrop getWeightedDrop(Material source, double playerLuck) {
         List<ForagingDrop> possibleDrops = drops.get(source);
         if (possibleDrops == null || possibleDrops.isEmpty()) return null;
 
-        double totalWeight = possibleDrops.stream().mapToDouble(ForagingDrop::getWeight).sum();
-        double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
+        // Si solo hay un drop posible o el jugador no tiene suerte, usamos el cálculo rápido estándar
+        if (possibleDrops.size() == 1 || playerLuck <= 0) {
+            double totalWeight = possibleDrops.stream().mapToDouble(ForagingDrop::getWeight).sum();
+            double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
 
-        double currentWeight = 0;
+            double currentWeight = 0;
+            for (ForagingDrop drop : possibleDrops) {
+                currentWeight += drop.getWeight();
+                if (currentWeight >= randomValue) {
+                    return drop;
+                }
+            }
+            return possibleDrops.getFirst();
+        }
+
+        // 1. Encontrar el peso más alto (este será considerado el drop "común")
+        double highestWeight = 0;
         for (ForagingDrop drop : possibleDrops) {
-            currentWeight += drop.getWeight();
-            if (currentWeight >= randomValue) {
+            if (drop.getWeight() > highestWeight) {
+                highestWeight = drop.getWeight();
+            }
+        }
+
+        // 2. Recalcular los pesos aplicando la suerte a los ítems raros
+        double totalAdjustedWeight = 0.0;
+        Map<ForagingDrop, Double> adjustedWeights = new HashMap<>();
+
+        for (ForagingDrop drop : possibleDrops) {
+            double currentWeight = drop.getWeight();
+
+            // Si el drop NO es el más común (tiene un peso menor al máximo), la suerte lo mejora
+            if (currentWeight < highestWeight) {
+                currentWeight = currentWeight * (1.0 + (playerLuck / 100.0));
+            }
+
+            adjustedWeights.put(drop, currentWeight);
+            totalAdjustedWeight += currentWeight;
+        }
+
+        // 3. Tirar el dado con los nuevos pesos inflados
+        double randomValue = ThreadLocalRandom.current().nextDouble() * totalAdjustedWeight;
+        double currentSum = 0;
+
+        for (ForagingDrop drop : possibleDrops) {
+            currentSum += adjustedWeights.get(drop);
+            if (currentSum >= randomValue) {
                 return drop;
             }
         }
-        return possibleDrops.get(0);
+
+        return possibleDrops.getFirst();
     }
 
     public int getTotalUniqueSources() { return uniqueSourceIds.size(); }

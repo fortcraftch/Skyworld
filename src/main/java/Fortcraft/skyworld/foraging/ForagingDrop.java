@@ -26,11 +26,11 @@ public class ForagingDrop {
         this.regenTime = regenTime;
     }
 
-    public void giveToStorage(Player player) {
+    public void giveToStorage(Player player, int totalAmount) {
         ItemStack item = ItemRegistry.build(itemId);
         if (item == null) return;
 
-        item.setAmount(amount);
+        item.setAmount(totalAmount);
 
         Rarity itemRarity = Rarity.COMUN;
         var dropTemplate = ItemRegistry.getDropTemplates().get(itemId);
@@ -45,7 +45,7 @@ public class ForagingDrop {
 
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
 
-        playerData.queueChatDrop(itemId, amount);
+        playerData.queueChatDrop(itemId, totalAmount);
     }
 
     public Material getSourceMaterial() { return sourceMaterial; }

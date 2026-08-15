@@ -10,7 +10,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Dripleaf;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -57,19 +56,26 @@ public class FarmManager implements Manager {
     }
 
     public boolean handleHarvest(Player p, Block block, FarmZone zone) {
-        FarmDrop initialDrop = zone.getBiome().getWeightedDrop(block.getType());
+        // 1. Obtenemos las stats de la caché ultra-rápida UNA SOLA VEZ
+        double wisdom = StatManager.getStat(p, "wisdom");
+        double luck = StatManager.getStat(p, "farming_luck");
+        double fortune = StatManager.getStat(p, "farming_fortune");
+
+        // 2. Tiramos la probabilidad del drop base con la Suerte aplicada
+        FarmDrop initialDrop = zone.getBiome().getWeightedDrop(block.getType(), luck);
         if (initialDrop == null) return false;
 
+        // 3. Procesamos (pasando las stats ya calculadas en memoria)
         if (isChainableMaterial(block.getType())) {
-            harvestChain(p, block, zone);
+            harvestChain(p, block, zone, luck, fortune, wisdom);
         } else {
-            processSingleHarvest(p, block, initialDrop);
+            processSingleHarvest(p, block, initialDrop, fortune, wisdom);
         }
 
         return true;
     }
 
-    private void harvestChain(Player p, Block startBlock, FarmZone zone) {
+    private void harvestChain(Player p, Block startBlock, FarmZone zone, double luck, double fortune, double wisdom) {
         Queue<Block> queue = new LinkedList<>();
         Set<Block> visited = new LinkedHashSet<>();
 
@@ -78,17 +84,17 @@ public class FarmManager implements Manager {
 
         while (!queue.isEmpty()) {
             Block current = queue.poll();
-            FarmDrop drop = zone.getBiome().getWeightedDrop(current.getType());
+            FarmDrop drop = zone.getBiome().getWeightedDrop(current.getType(), luck);
 
             if (drop != null) {
-                processSingleHarvest(p, current, drop);
+                processSingleHarvest(p, current, drop, fortune, wisdom);
             }
 
             for (BlockFace face : CHAIN_FACES) {
                 Block neighbor = current.getRelative(face);
 
                 if (!visited.contains(neighbor) && zone.contains(neighbor)) {
-                    if (isChainableMaterial(neighbor.getType()) && zone.getBiome().getWeightedDrop(neighbor.getType()) != null) {
+                    if (isChainableMaterial(neighbor.getType()) && zone.getBiome().hasDrops(neighbor.getType())) {
                         visited.add(neighbor);
                         queue.add(neighbor);
                     }
@@ -97,14 +103,22 @@ public class FarmManager implements Manager {
         }
     }
 
-    private void processSingleHarvest(Player p, Block block, FarmDrop drop) {
-        drop.giveToStorage(p);
+    private void processSingleHarvest(Player p, Block block, FarmDrop drop, double fortune, double wisdom) {
+        // --- CÁLCULO DE DROPS (FORTUNA) ---
+        int baseAmount = drop.getAmount();
+        int finalAmount = StatManager.calculateFortuneDrops(baseAmount, fortune);
+        drop.giveToStorage(p, finalAmount);
 
+        // --- CÁLCULO DE EXPERIENCIA (SABIDURÍA) ---
         var template = ItemRegistry.getDropTemplates().get(drop.itemId());
-        if (template != null && template.customStats() != null) {
-            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
-            if (expGiven > 0) {
-                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "farming", expGiven);
+        if (template != null && template.stats() != null) {
+            double baseExp = template.stats().getOrDefault("exp_given", 0.0);
+
+            if (baseExp > 0) {
+                double multiplier = 1.0 + (wisdom / 100.0);
+                double finalExp = baseExp * multiplier;
+
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "farming", finalExp);
             }
         }
 
@@ -124,8 +138,6 @@ public class FarmManager implements Manager {
 
         pendingRegen.put(loc, respawnTime);
         context.put(loc, drop);
-
-        // Guardamos una copia exacta de las propiedades del bloque (orientación, facing, etc.)
         savedBlockData.put(loc, block.getBlockData().clone());
 
         block.setType(Material.AIR, false);
@@ -138,8 +150,8 @@ public class FarmManager implements Manager {
                 if (pendingRegen.isEmpty()) return;
 
                 long now = System.currentTimeMillis();
-
                 List<Location> readyLocations = new ArrayList<>();
+
                 for (Map.Entry<Location, Long> entry : pendingRegen.entrySet()) {
                     if (now >= entry.getValue()) {
                         readyLocations.add(entry.getKey());

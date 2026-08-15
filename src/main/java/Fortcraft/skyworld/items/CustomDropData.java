@@ -11,6 +11,6 @@ public record CustomDropData(
         List<String> lore,
         String rarity,
         String category,
-        Map<String, Double> customStats,
+        Map<String, Double> stats, // Cambiado a stats genérico
         boolean isEquipment
 ) {}

@@ -60,8 +60,8 @@ public class FishingSession {
                 drop.giveToStorage(player);
 
                 var template = ItemRegistry.getDropTemplates().get(drop.getItemId());
-                if (template != null && template.customStats() != null) {
-                    double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
+                if (template != null && template.stats() != null) {
+                    double expGiven = template.stats().getOrDefault("exp_given", 0.0);
                     if (expGiven > 0) {
                         Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(player, "fishing", expGiven);
                     }

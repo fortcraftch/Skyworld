@@ -28,11 +28,11 @@ public class MiningDrop {
         this.regenTime = regenTime;
     }
 
-    public void giveToStorage(Player player) {
+    public void giveToStorage(Player player, int totalAmount) {
         ItemStack item = ItemRegistry.build(itemId);
         if (item == null) return;
 
-        item.setAmount(this.amount);
+        item.setAmount(totalAmount);
 
         Rarity itemRarity = Rarity.COMUN;
         var dropTemplate = ItemRegistry.getDropTemplates().get(itemId);
@@ -47,7 +47,7 @@ public class MiningDrop {
 
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
 
-        playerData.queueChatDrop(itemId, amount);
+        playerData.queueChatDrop(itemId, totalAmount);
     }
 
     public String itemId() { return itemId; }

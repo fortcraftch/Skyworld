@@ -26,11 +26,11 @@ public class FarmDrop {
         this.regenTime = regenTime;
     }
 
-    public void giveToStorage(Player player) {
+    public void giveToStorage(Player player, int totalAmount) {
         ItemStack item = ItemRegistry.build(itemId);
         if (item == null) return;
 
-        item.setAmount(this.amount);
+        item.setAmount(totalAmount);
 
         Rarity itemRarity = Rarity.COMUN;
         var dropTemplate = ItemRegistry.getDropTemplates().get(itemId);
@@ -42,10 +42,9 @@ public class FarmDrop {
         var playerData = dataManager.getPlayerData(player.getUniqueId());
 
         playerData.discover(player.getUniqueId(), this.sourceId, this.sourceName);
-
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
 
-        playerData.queueChatDrop(itemId, amount);
+        playerData.queueChatDrop(itemId, totalAmount);
     }
 
     public Material getSourceBlock() { return sourceBlock; }

@@ -65,8 +65,8 @@ public class FishingDrop {
 
     public int getSizeNum() {
         var template = ItemRegistry.getDropTemplates().get(itemId);
-        if (template != null && template.customStats() != null) {
-            Number sizeObj = template.customStats().get("size");
+        if (template != null && template.stats() != null) {
+            Number sizeObj = template.stats().get("size");
             if (sizeObj != null) {
                 return sizeObj.intValue();
             }

@@ -69,7 +69,7 @@ public class MenuManager implements Manager {
                     if (!target.isEmpty()) {
                         var template = ItemRegistry.getDropTemplates().get(target.toLowerCase());
                         if (template != null) {
-                            Map<String, Double> customStats = template.customStats();
+                            Map<String, Double> customStats = template.stats();
                             double basePrice = action.equalsIgnoreCase("SELL") ? customStats.get("sell_price").intValue() : customStats.get("buy_price").intValue();
 
                             finalPrice = (basePrice * amount) + menuPriceModifier;

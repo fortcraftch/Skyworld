@@ -39,33 +39,42 @@ public class ForagingManager implements Manager {
     }
 
     public boolean handleBreak(Player p, Block block, ForagingZone zone) {
-        // 1. Obtenemos un drop aleatorio basado en pesos desde el bioma
-        ForagingDrop drop = zone.getBiome().getWeightedDrop(block.getType());
+        // 1. Obtenemos las estadísticas del caché del jugador
+        double luck = StatManager.getStat(p, "foraging_luck");
+        double fortune = StatManager.getStat(p, "foraging_fortune");
+        double wisdom = StatManager.getStat(p, "wisdom");
 
+        // 2. Obtenemos el drop aplicando la Suerte de Tala
+        ForagingDrop drop = zone.getBiome().getWeightedDrop(block.getType(), luck);
         if (drop == null) return false;
 
         var template = ItemRegistry.getDropTemplates().get(drop.itemId());
 
         Set<Block> targetTree;
 
-        // 2. Gestión de la estructura del árbol
+        // 3. Gestión de la estructura del árbol
         if (blockToTreeMap.containsKey(block)) {
             targetTree = blockToTreeMap.get(block);
         } else {
-            // Si es el primer bloque, detectamos toda la estructura conectada
             targetTree = detectTree(block);
             for (Block b : targetTree) {
                 blockToTreeMap.put(b, targetTree);
             }
         }
 
-        drop.giveToStorage(p);
+        // 4. Calculamos los drops aplicando la Fortuna de Tala
+        int baseAmount = drop.getAmount();
+        int finalAmount = StatManager.calculateFortuneDrops(baseAmount, fortune);
+        drop.giveToStorage(p, finalAmount);
 
-        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
-        if (template != null && template.customStats() != null) {
-            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
-            if (expGiven > 0) {
-                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "foraging", expGiven);
+        // 5. Calculamos la experiencia aplicando la Sabiduría (Wisdom)
+        if (template != null && template.stats() != null) {
+            double baseExp = template.stats().getOrDefault("exp_given", 0.0);
+            if (baseExp > 0) {
+                double multiplier = 1.0 + (wisdom / 100.0);
+                double finalExp = baseExp * multiplier;
+
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "foraging", finalExp);
             }
         }
 
@@ -76,7 +85,6 @@ public class ForagingManager implements Manager {
     }
 
     private void scheduleTreeRegen(Set<Block> blocks, ForagingDrop drop) {
-        // El tiempo de regeneración se refresca con cada bloque roto del mismo árbol
         long newRegenTime = System.currentTimeMillis() + (drop.getRegenTime() * 1000L);
         pendingTrees.put(blocks, newRegenTime);
         treeMaterials.putIfAbsent(blocks, drop.getSourceMaterial());
@@ -115,7 +123,6 @@ public class ForagingManager implements Manager {
     private void playRegenEffect(Set<Block> blocks) {
         if (blocks.isEmpty()) return;
 
-        // 1. Calculamos los límites y el centro (como hicimos antes)
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
         int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
         int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
@@ -144,7 +151,7 @@ public class ForagingManager implements Manager {
         if (world != null) {
             world.spawnParticle(Particle.HAPPY_VILLAGER, center, 40, offsetX, offsetY, offsetZ, 0.05);
 
-            float randomPitch = 1.2f + (new Random().nextFloat() * 0.4f); // Entre 1.2 y 1.6
+            float randomPitch = 1.2f + (new Random().nextFloat() * 0.4f);
             world.playSound(center, org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, randomPitch);
             world.playSound(center, org.bukkit.Sound.BLOCK_CHORUS_FLOWER_GROW, 0.5f, 0.8f);
         }
@@ -156,13 +163,11 @@ public class ForagingManager implements Manager {
         stack.push(start);
         Material target = start.getType();
 
-        // Algoritmo de inundación (Flood fill) para detectar troncos adyacentes
-        while (!stack.isEmpty() && tree.size() < 150) { // Límite de seguridad
+        while (!stack.isEmpty() && tree.size() < 150) {
             Block current = stack.pop();
             if (tree.contains(current)) continue;
 
             if (current.getType() == target || current.getType() == Material.AIR) {
-                // Solo añadimos si es el material original (o aire si ya empezamos a talar)
                 if (current.getType() == target) {
                     tree.add(current);
                     for (int x = -1; x <= 1; x++) {

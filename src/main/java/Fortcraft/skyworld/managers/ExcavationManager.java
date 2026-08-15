@@ -3,6 +3,7 @@ package Fortcraft.skyworld.managers;
 import Fortcraft.skyworld.Skyworld;
 import Fortcraft.skyworld.excavation.ExcavationDrop;
 import Fortcraft.skyworld.excavation.ExcavationNode;
+import Fortcraft.skyworld.items.ItemRegistry;
 import Fortcraft.skyworld.listeners.ExcavationListener;
 import Fortcraft.skyworld.zones.ExcavationZone;
 import org.bukkit.*;
@@ -35,7 +36,6 @@ public class ExcavationManager implements Manager {
 
     @Override
     public void unload() {
-        // Cancelar todas las sesiones de cepillado activas al recargar/apagar
         for (BukkitTask task : activeBrushingSessions.values()) {
             task.cancel();
         }
@@ -71,29 +71,23 @@ public class ExcavationManager implements Manager {
         return MAX_PROGRESS;
     }
 
-    /**
-     * Inicia una tarea repetitiva mientras el jugador mantenga presionado el clic derecho con el pincel.
-     */
     public void startBrushingSession(Player player, ExcavationNode node, Block block) {
         UUID uuid = player.getUniqueId();
-        if (activeBrushingSessions.containsKey(uuid)) return; // Ya tiene una sesión activa
+        if (activeBrushingSessions.containsKey(uuid)) return;
 
         BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
-                // 1. Validar que el jugador siga conectado y tenga el pincel en la mano principal
                 if (!player.isOnline() || player.getInventory().getItemInMainHand().getType() != Material.BRUSH) {
                     stopBrushingSession(uuid);
                     return;
                 }
 
-                // 2. Verificar que mantenga el botón derecho presionado (mano levantada en Minecraft)
                 if (!player.isHandRaised()) {
                     stopBrushingSession(uuid);
                     return;
                 }
 
-                // 3. Verificar que el jugador siga mirando exactamente al mismo nodo de excavación (distancia máxima de 5 bloques)
                 Block targetBlock = player.getTargetBlockExact(5);
                 if (targetBlock == null || !targetBlock.getLocation().equals(node.getLocation())) {
                     stopBrushingSession(uuid);
@@ -106,12 +100,14 @@ public class ExcavationManager implements Manager {
                     return;
                 }
 
-                // 4. Preparación visual en el primer tick de la sesión si no se ha inicializado
                 if (node.getItemDisplay() == null) {
                     BlockFace closestExposedFace = getClosestExposedFaceToPlayer(block, player);
                     ExcavationZone zone = getZoneAt(loc);
                     if (zone != null) {
-                        ExcavationDrop drop = zone.getBiome().getWeightedDrop(block.getType());
+                        // Obtenemos la Suerte de Excavación del jugador para el drop ponderado
+                        double luck = StatManager.getStat(player, "excavation_luck");
+                        ExcavationDrop drop = zone.getBiome().getWeightedDrop(block.getType(), luck);
+
                         if (drop != null) {
                             node.setPendingDrop(drop);
                             ItemStack previewItem = drop.getItemStack();
@@ -120,7 +116,6 @@ public class ExcavationManager implements Manager {
                     }
                 }
 
-                // 5. Efecto sonoro y partículas del bloque
                 loc.getWorld().playSound(loc, Sound.ITEM_BRUSH_BRUSHING_SAND, 1.0f, 1.0f);
                 loc.getWorld().spawnParticle(
                         Particle.BLOCK,
@@ -129,7 +124,6 @@ public class ExcavationManager implements Manager {
                         block.getBlockData()
                 );
 
-                // 6. Incrementar progreso gradualmente (Ej: +10 cada 5 ticks = ~0.25s por incremento)
                 node.addProgress(10);
 
                 if (node.getProgress() >= MAX_PROGRESS) {
@@ -137,7 +131,7 @@ public class ExcavationManager implements Manager {
                     stopBrushingSession(uuid);
                 }
             }
-        }.runTaskTimer(Skyworld.getInstance(), 0L, 5L); // Ejecutar inmediatamente y repetir cada 5 ticks
+        }.runTaskTimer(Skyworld.getInstance(), 0L, 5L);
 
         activeBrushingSessions.put(uuid, task);
     }
@@ -153,25 +147,39 @@ public class ExcavationManager implements Manager {
         Location loc = node.getLocation();
         ExcavationZone zone = getZoneAt(loc);
 
-        // 1. Otorgar el botín
         ExcavationDrop drop = node.getPendingDrop();
         if (drop != null) {
-            drop.giveToStorage(p);
+            // 1. Obtenemos las stats de Fortuna y Sabiduría del caché
+            double fortune = StatManager.getStat(p, "excavation_fortune");
+            double wisdom = StatManager.getStat(p, "wisdom");
 
-            if (drop.getExpGiven() > 0) {
-                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "excavation", drop.getExpGiven());
+            // 2. Calculamos la cantidad final de drops aplicando la Fortuna
+            int baseAmount = drop.getAmount();
+            int finalAmount = StatManager.calculateFortuneDrops(baseAmount, fortune);
+
+            // 3. Entregamos los ítems a la bolsa
+            drop.giveToStorage(p, finalAmount);
+
+            // 4. Calculamos la experiencia aplicando la Sabiduría (Wisdom)
+            var template = ItemRegistry.getDropTemplates().get(drop.itemId());
+            double baseExp = (template != null && template.stats() != null)
+                    ? template.stats().getOrDefault("exp_given", drop.getExpGiven())
+                    : drop.getExpGiven();
+
+            if (baseExp > 0) {
+                double multiplier = 1.0 + (wisdom / 100.0);
+                double finalExp = baseExp * multiplier;
+
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "excavation", finalExp);
             }
         }
 
-        // 2. Limpieza visual
         node.cleanup();
         activeNodes.remove(loc);
 
-        // 3. Sonido final y restablecer el bloque al tipo de material original
         loc.getWorld().playSound(loc, Sound.ITEM_BRUSH_BRUSHING_SAND_COMPLETE, 1.0f, 1.0f);
         loc.getBlock().setType(node.getOriginalMaterial());
 
-        // 4. Programar reaparición
         if (zone != null) {
             Bukkit.getScheduler().runTaskLater(Skyworld.getInstance(), () -> {
                 spawnNewNodeInZone(zone);
@@ -243,17 +251,14 @@ public class ExcavationManager implements Manager {
                                 BlockFace.EAST, BlockFace.WEST
                         };
 
-                        // Iterar por cada cara para verificar si está expuesta al aire
                         for (BlockFace face : faces) {
                             if (block.getRelative(face).getType().isAir()) {
-                                // Calcular el centro exacto de la cara expuesta
                                 Location faceLoc = blockLoc.clone().add(
                                         0.5 + (face.getModX() * 0.51),
                                         0.5 + (face.getModY() * 0.51),
                                         0.5 + (face.getModZ() * 0.51)
                                 );
 
-                                // Ajustar la dispersión de las partículas según la orientación de la cara
                                 double offsetX = (face.getModX() == 0) ? 0.3 : 0.05;
                                 double offsetY = (face.getModY() == 0) ? 0.3 : 0.05;
                                 double offsetZ = (face.getModZ() == 0) ? 0.3 : 0.05;

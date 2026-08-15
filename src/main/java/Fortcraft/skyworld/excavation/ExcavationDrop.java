@@ -37,9 +37,11 @@ public class ExcavationDrop {
         return item;
     }
 
-    public void giveToStorage(Player player) {
+    public void giveToStorage(Player player, int totalAmount) {
         ItemStack item = getItemStack();
         if (item == null) return;
+
+        item.setAmount(totalAmount);
 
         Rarity itemRarity = Rarity.COMUN;
         var dropTemplate = ItemRegistry.getDropTemplates().get(itemId);
@@ -57,7 +59,7 @@ public class ExcavationDrop {
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
 
         // Mostrar en el chat
-        playerData.queueChatDrop(itemId, amount);
+        playerData.queueChatDrop(itemId, totalAmount);
     }
 
     public String itemId() { return itemId; }

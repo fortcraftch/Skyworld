@@ -1,31 +1,97 @@
-# Estructura para tus items tipo Skyblock
 novice_sword:
   material: WOODEN_SWORD
-  name: "&fEspada de Novato"
+  name: "Espada de Novato"
   category: "WEAPON"
-  rarity: "ESPECIAL"
-  stats:
-    GENERIC_ATTACK_DAMAGE: 5.0
+  rarity: "COMUN"
+  custom_stats:
+    GENERIC_ATTACK_DAMAGE: 4.0        # Vanilla: Daño de ataque base
+    GENERIC_ATTACK_SPEED: -2.4        # Vanilla: Velocidad de ataque
+    crit_chance: 5.0                  # Custom: 5% de probabilidad de crítico
+    crit_damage: 10.0                 # Custom: +10% de daño al hacer crítico
   lore:
     - "&7Una espada desgastada."
     - ""
     - "&fTipo: &7Espada Corta"
 
-iron_sword:
-  material: IRON_SWORD
-  name: "&7Espada de Hierro"
-  category: "WEAPON"
-  rarity: "COMUN"
-  stats:
-    LUCK: 150.0
-    GENERIC_ATTACK_DAMAGE: 8.0
+mithril_pickaxe:
+  material: IRON_PICKAXE
+  name: "Pico de Mithril"
+  category: "TOOL"
+  rarity: "RARO"
+  custom_stats:
+    GENERIC_ATTACK_DAMAGE: 3.0
+    mining_fortune: 150.0             # Custom: 150 de Fortuna (1.5x drops extra)
+    mining_luck: 45.0                 # Custom: Suerte de minería
+    wisdom: 5.0                       # Custom: +5% de XP ganada al minar
   lore:
-    - "&7Mas pesada y fuerte."
+    - "&7Forjado en las profundidades."
+    - "&7Ideal para minerales raros."
+
+novice_hoe:
+  material: WOODEN_HOE
+  name: "Azada de Novato"
+  category: "TOOL"
+  rarity: "COMUN"
+  custom_stats:
+    GENERIC_ATTACK_DAMAGE: 1.0
+    farming_fortune: 25.0             # Custom: 25 de Fortuna de Granja (más cosecha)
+    farming_luck: 10.0                # Custom: 10 de Suerte de Granja (mejores pesos)
+  lore:
+    - "&7Una herramienta rústica pero eficaz."
+    - "&7Aumenta ligeramente tus cosechas."
+
+forest_axe:
+  material: IRON_AXE
+  name: "Hacha del Leñador"
+  category: "TOOL"
+  rarity: "RARO"
+  custom_stats:
+    GENERIC_ATTACK_DAMAGE: 5.0
+    foraging_fortune: 80.0            # Custom: Fortuna de Tala
+    foraging_luck: 30.0               # Custom: Suerte de Tala
+  lore:
+    - "&7Corta árboles con facilidad."
+    - "&7Perfecta para obtener madera selecta."
+
+ocean_rod:
+  material: FISHING_ROD
+  name: "Caña de las Profundidades"
+  category: "TOOL"
+  rarity: "EPICO"
+  custom_stats:
+    fishing_fortune: 50.0             # Custom: Fortuna de Pesca
+    fishing_luck: 75.0                # Custom: Suerte de Pesca
+  lore:
+    - "&7Atrae peces legendarios y tesoros."
+
+excavator_brush:
+  material: BRUSH
+  name: "Pincel de Arqueólogo"
+  category: "TOOL"
+  rarity: "RARO"
+  custom_stats:
+    excavation_fortune: 100.0         # Custom: Fortuna de Excavación
+    excavation_luck: 50.0             # Custom: Suerte de Excavación
+    wisdom: 10.0                      # Custom: +10% de Sabiduría general
+  lore:
+    - "&7Ideal para cepillar y desenterrar artefactos."
+
+scholar_talisman:
+  material: BOOK
+  name: "Talismán del Sabio"
+  category: "ACCESSORY"
+  rarity: "LEGENDARIO"
+  custom_stats:
+    wisdom: 25.0                      # Custom: +25% de XP en todas las habilidades
+  lore:
+    - "&7Otorga un conocimiento ancestral."
+    - "&7Aumenta la experiencia obtenida."
 
 apple:
   material: APPLE
-  name: "&aManzana Curativa"
+  name: "Manzana Curativa"
   category: "CONSUMABLE"
   rarity: "EPICO"
+  # Los consumibles no necesitan stats, el manager no fallará si no los pones.
   lore:
     - "&7Restaura un poco de vida."

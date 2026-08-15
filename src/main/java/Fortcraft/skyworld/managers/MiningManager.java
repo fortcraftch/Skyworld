@@ -24,12 +24,10 @@ public class MiningManager implements Manager {
 
     @Override
     public void unload() {
-        // Restaurar bloques pendientes al cerrar el server (Opcional, pero recomendado)
         for (Map.Entry<Block, MiningRegenState> entry : regeneratingBlocks.entrySet()) {
             Block b = entry.getKey();
             MiningRegenState state = entry.getValue();
             if (state.hasHistory()) {
-                // Restauramos al estado original más profundo
                 while(state.hasHistory()) {
                     MiningDrop drop = state.popHistory();
                     b.setType(drop.getSource(), false);
@@ -52,24 +50,35 @@ public class MiningManager implements Manager {
     }
 
     public boolean handleMine(Player p, Block block, MiningZone zone) {
-        MiningDrop drop = zone.getBiome().getWeightedDrop(block.getType());
+        // 1. Obtenemos las estadísticas del caché del jugador
+        double luck = StatManager.getStat(p, "mining_luck");
+        double fortune = StatManager.getStat(p, "mining_fortune");
+        double wisdom = StatManager.getStat(p, "wisdom");
 
+        // 2. Obtenemos el drop aplicando la Suerte de Minería
+        MiningDrop drop = zone.getBiome().getWeightedDrop(block.getType(), luck);
         if (drop == null) return false;
 
         var template = ItemRegistry.getDropTemplates().get(drop.itemId());
 
-        drop.giveToStorage(p);
+        // 3. Calculamos la cantidad final de drops aplicando la Fortuna de Minería
+        int baseAmount = drop.getAmount();
+        int finalAmount = StatManager.calculateFortuneDrops(baseAmount, fortune);
+        drop.giveToStorage(p, finalAmount);
 
-        // 3. Dar la experiencia registrada estáticamente en el drops.yml centralizado
-        if (template != null && template.customStats() != null) {
-            double expGiven = template.customStats().getOrDefault("exp_given", 0.0);
-            if (expGiven > 0) {
-                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "mining", expGiven);
+        // 4. Calculamos la experiencia aplicando la Sabiduría (Wisdom)
+        if (template != null && template.stats() != null) {
+            double baseExp = template.stats().getOrDefault("exp_given", 0.0);
+            if (baseExp > 0) {
+                double multiplier = 1.0 + (wisdom / 100.0);
+                double finalExp = baseExp * multiplier;
+
+                Skyworld.getInstance().getManagerHandler().getSkillManager().giveXp(p, "mining", finalExp);
             }
         }
 
         MiningRegenState state = regeneratingBlocks.computeIfAbsent(block, b -> new MiningRegenState());
-        state.pushHistory(drop); // Guardamos qué drop salió para logs o futuros usos
+        state.pushHistory(drop);
 
         long respawnTime = System.currentTimeMillis() + (drop.getRegenTime() * 1000L);
         state.setNextRegenTime(respawnTime);
