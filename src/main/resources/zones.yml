@@ -135,6 +135,8 @@ mining_biomes:
         name: "Mena de Diamante"
         transform-to: DEEPSLATE
         regen-time: 5
+        breaking_power: 3.0    # Nivel de pico requerido
+        hardness: 50.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           diamante:
             item_id: "diamond"
@@ -148,6 +150,8 @@ mining_biomes:
         name: "Mena de Hierro"
         transform-to: DEEPSLATE
         regen-time: 3
+        breaking_power: 2.0    # Nivel de pico requerido
+        hardness: 30.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           hierro:
             item_id: "iron"
@@ -161,6 +165,8 @@ mining_biomes:
         name: "Piedra de Profundidad"
         transform-to: BEDROCK
         regen-time: 1
+        breaking_power: 1.0    # Nivel de pico requerido
+        hardness: 20.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           piedra:
             item_id: "stone"
@@ -174,6 +180,8 @@ mining_biomes:
         name: "Piedra"
         transform-to: BEDROCK
         regen-time: 1
+        breaking_power: 1.0    # Nivel de pico requerido
+        hardness: 10.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           piedra:
             item_id: "stone"
@@ -192,6 +200,8 @@ mining_biomes:
         name: "Diamante"
         transform-to: STONE
         regen-time: 5
+        breaking_power: 2.0    # Nivel de pico requerido
+        hardness: 50.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           diamante:
             item_id: "diamond"
@@ -205,6 +215,8 @@ mining_biomes:
         name: "Hierro"
         transform-to: STONE
         regen-time: 3
+        breaking_power: 1.0    # Nivel de pico requerido
+        hardness: 30.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           hierro:
             item_id: "iron"
@@ -218,6 +230,8 @@ mining_biomes:
         name: "Piedra"
         transform-to: BEDROCK
         regen-time: 1
+        breaking_power: 1.0    # Nivel de pico requerido
+        hardness: 10.0        # "Vida" del bloque. Afectado por la stat 'mining_speed'
         drops:
           piedra:
             item_id: "stone"

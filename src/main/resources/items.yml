@@ -23,6 +23,8 @@ mithril_pickaxe:
     mining_fortune: 150.0             # Custom: 150 de Fortuna (1.5x drops extra)
     mining_luck: 45.0                 # Custom: Suerte de minería
     wisdom: 5.0                       # Custom: +5% de XP ganada al minar
+    mining_speed: 10
+    breaking_power: 2
   lore:
     - "&7Forjado en las profundidades."
     - "&7Ideal para minerales raros."
@@ -79,7 +81,7 @@ excavator_brush:
 scholar_talisman:
   material: BOOK
   name: "Talismán del Sabio"
-  category: "ACCESSORY"
+  category: "CONSUMABLE"
   rarity: "LEGENDARIO"
   custom_stats:
     wisdom: 25.0                      # Custom: +25% de XP en todas las habilidades

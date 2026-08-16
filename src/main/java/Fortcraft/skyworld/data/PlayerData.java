@@ -35,6 +35,10 @@ public class PlayerData {
     private double customMaxHealth = 100.0;
     private final Map<String, Double> pendingActionbarXp = new LinkedHashMap<>();
 
+    // SISTEMA DE AVISOS Y ALERTAS TEMPORALES
+    private String temporaryNotice = null;
+    private long noticeEndTime = 0L;
+
     public PlayerData(UUID uuid) {
         this.uuid = uuid;
         this.storageBag = new StorageBag(uuid);
@@ -77,10 +81,26 @@ public class PlayerData {
         currentStats.putAll(newStats);
     }
 
-    // --- ACUMULADOR DE XP PARA ACTION BAR ---
+    // --- ACUMULADOR DE XP Y AVISOS PARA ACTION BAR ---
     public void queueActionbarXp(String skill, double amount) {
         String key = skill.toLowerCase();
         pendingActionbarXp.put(key, pendingActionbarXp.getOrDefault(key, 0.0) + amount);
+    }
+
+    /**
+     * Muestra un aviso temporal en la Action Bar con máxima prioridad.
+     * @param message Mensaje formateado o con códigos de color.
+     * @param durationSeconds Duración en segundos que permanecerá visible.
+     */
+    public void sendNotice(String message, int durationSeconds) {
+        this.temporaryNotice = message;
+        this.noticeEndTime = System.currentTimeMillis() + (durationSeconds * 1000L);
+
+        // Envío inmediato al instante para evitar delay del Runnable
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null && player.isOnline()) {
+            player.sendActionBar(ColorUtils.format(message));
+        }
     }
 
     private void startActionBarTask() {
@@ -93,8 +113,14 @@ public class PlayerData {
                     return;
                 }
 
-                if (!pendingActionbarXp.isEmpty()) {
-                    // Extraemos el primer elemento que entró (FIFO)
+                // PRIORIDAD 1: Avisos temporales (alertas, falta de poder de minado, etc.)
+                if (temporaryNotice != null && System.currentTimeMillis() < noticeEndTime) {
+                    player.sendActionBar(ColorUtils.format(temporaryNotice));
+                }
+                // PRIORIDAD 2: Cola de ganancia de XP
+                else if (!pendingActionbarXp.isEmpty()) {
+                    temporaryNotice = null; // Limpiar aviso al expirar
+
                     Iterator<Map.Entry<String, Double>> it = pendingActionbarXp.entrySet().iterator();
                     Map.Entry<String, Double> entry = it.next();
                     String skill = entry.getKey();
@@ -118,8 +144,10 @@ public class PlayerData {
 
                     player.sendActionBar(ColorUtils.format(msg));
 
-                } else {
-                    // Si la cola de XP está vacía, mostramos la vida por defecto
+                }
+                // PRIORIDAD 3: Salud personalizada (Por defecto)
+                else {
+                    temporaryNotice = null;
                     String msg = String.format("&c❤ %.1f &7/ &c%.1f", customHealth, customMaxHealth);
 
                     player.sendActionBar(ColorUtils.format(msg));
@@ -128,7 +156,7 @@ public class PlayerData {
                 checkAndFlushDrops(player);
 
             }
-        }.runTaskTimer(Fortcraft.skyworld.Skyworld.getInstance(), 20L, 20L); // 20 ticks = 1 segundo
+        }.runTaskTimer(Fortcraft.skyworld.Skyworld.getInstance(), 10L, 10L); // 10 ticks = 0.5s para refresco fluido
     }
 
     public UUID getUuid() { return uuid; }

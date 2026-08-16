@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.items;
 
 import Fortcraft.skyworld.Skyworld;
+import Fortcraft.skyworld.stats.CustomStat;
 import Fortcraft.skyworld.utils.ColorUtils;
 import Fortcraft.skyworld.utils.Rarity;
 import net.kyori.adventure.text.Component;
@@ -171,33 +172,41 @@ public class ItemRegistry {
         }
 
         if (stats != null && !stats.isEmpty()) {
-            finalLore.add(Component.text(" ")); // Espacio estético separador
+            finalLore.add(Component.text(" ")); // Espacio separador estético
 
             for (Map.Entry<String, Double> entry : stats.entrySet()) {
                 String rawKey = entry.getKey();
-
-                // 1. Nombres en minúsculas y reemplazando guiones bajos por espacios
-                String statName = rawKey.replace("_", " ").toLowerCase();
                 double value = entry.getValue();
+
+                // 1. Buscamos si existe un CustomStat correspondiente
+                CustomStat customStat = CustomStat.fromKey(rawKey);
+                String displayName;
+
+                if (customStat != null) {
+                    displayName = customStat.getDisplayName(); // Usa el nombre bonito del enum (ej: "☘ Fortuna de Minería")
+                } else {
+                    // Fallback para stats genéricas o externas (ej: attack_damage -> attack damage)
+                    displayName = rawKey.replace("_", " ").toLowerCase();
+                }
 
                 // 2. Detección automática si debe llevar porcentaje (%)
                 boolean isPercent = rawKey.contains("chance")
-                        || rawKey.contains("damage") && rawKey.contains("crit")
+                        || (rawKey.contains("damage") && rawKey.contains("crit"))
                         || rawKey.contains("wisdom")
                         || rawKey.contains("luck")
                         || rawKey.contains("fortune")
                         || rawKey.contains("percent");
 
-                // Formato estético del valor (ej: +5% o +150)
+                // Formato del valor numérico
                 String valueString = (value > 0 ? "+" : "") + (value % 1 == 0 ? String.format("%.0f", value) : value);
                 if (isPercent) {
                     valueString += "%";
                 }
 
-                // 3. Diseño limpio con un pequeño símbolo decorativo (▸)
+                // 3. Diseño limpio combinando el displayName del enum
                 finalLore.add(Component.text("  ▸ ")
                         .color(NamedTextColor.DARK_GRAY)
-                        .append(Component.text(statName + ": ").color(NamedTextColor.GRAY))
+                        .append(Component.text(displayName + ": ").color(NamedTextColor.GRAY))
                         .append(Component.text(valueString).color(NamedTextColor.GREEN))
                         .decoration(TextDecoration.ITALIC, false));
             }

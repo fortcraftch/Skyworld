@@ -4,6 +4,8 @@ public enum CustomStat {
     // Stats de Minería
     MINING_FORTUNE("mining_fortune", "☘ Fortuna de Minería", 0.0),
     MINING_LUCK("mining_luck", "🍀 Suerte de Minería", 0.0),
+    MINING_SPEED("mining_speed", "⛏ Velocidad de Minería", 0.0),
+    BREAKING_POWER("breaking_power", "⚗ Poder de Minería", 0.0), // 1 = Pico de madera, 2 = Piedra, etc.
 
     // Stats de Farmeo
     FARMING_FORTUNE("farming_fortune", "☘ Fortuna de Granja", 0.0),

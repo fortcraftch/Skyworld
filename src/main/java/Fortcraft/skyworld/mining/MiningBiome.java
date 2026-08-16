@@ -19,7 +19,7 @@ public class MiningBiome {
     private final Material icon;
 
     private final Map<Material, List<MiningDrop>> drops = new HashMap<>();
-    private final Set<String> uniqueSourceIds = new HashSet<>(); // Ahora guardará IDs
+    private final Set<String> uniqueSourceIds = new HashSet<>();
 
     public MiningBiome(String id, ConfigurationSection config) {
         this.id = id;
@@ -29,13 +29,23 @@ public class MiningBiome {
         ConfigurationSection blocksSec = config.getConfigurationSection("blocks");
         if (blocksSec != null) {
             for (String blockKey : blocksSec.getKeys(false)) {
-                Material sourceMat = Material.valueOf(blockKey.toUpperCase());
+                Material sourceMat;
+                try {
+                    sourceMat = Material.valueOf(blockKey.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    continue;
+                }
                 ConfigurationSection blockSec = blocksSec.getConfigurationSection(blockKey);
+                if (blockSec == null) continue;
 
-                String sourceId = blockKey.toLowerCase(); // ID Único de la fuente
+                String sourceId = blockKey.toLowerCase();
                 String sourceName = blockSec.getString("name", blockKey);
                 Material defTransform = Material.valueOf(blockSec.getString("transform-to", "BEDROCK"));
                 int defRegen = blockSec.getInt("regen-time", 5);
+
+                // NUEVOS ATRIBUTOS DEL BLOQUE
+                double defRequiredPower = blockSec.getDouble("breaking_power", 1);
+                double defHardness = blockSec.getDouble("hardness", 50.0);
 
                 List<MiningDrop> blockDrops = new ArrayList<>();
                 ConfigurationSection dropsListSec = blockSec.getConfigurationSection("drops");
@@ -43,11 +53,16 @@ public class MiningBiome {
                 if (dropsListSec != null) {
                     for (String dropId : dropsListSec.getKeys(false)) {
                         ConfigurationSection singleDropSec = dropsListSec.getConfigurationSection(dropId);
+                        if (singleDropSec == null) continue;
 
                         String itemId = singleDropSec.getString("item_id", dropId);
                         double weight = singleDropSec.getDouble("weight", 10.0);
                         int amount = singleDropSec.getInt("amount", 1);
                         int customRegen = singleDropSec.getInt("regen-time", defRegen);
+
+                        // Permite sobreescribir atributos por drop si se desea, o usar los del bloque base
+                        double requiredPower = singleDropSec.getDouble("required-power", defRequiredPower);
+                        double hardness = singleDropSec.getDouble("hardness", defHardness);
 
                         MiningDrop drop = new MiningDrop(
                                 sourceMat,
@@ -57,7 +72,9 @@ public class MiningBiome {
                                 weight,
                                 amount,
                                 defTransform,
-                                customRegen
+                                customRegen,
+                                requiredPower,
+                                hardness
                         );
                         blockDrops.add(drop);
                     }
@@ -65,7 +82,7 @@ public class MiningBiome {
 
                 if (!blockDrops.isEmpty()) {
                     drops.put(sourceMat, blockDrops);
-                    uniqueSourceIds.add(sourceId); // Guardamos la ID estricta
+                    uniqueSourceIds.add(sourceId);
                 }
             }
         }
@@ -79,7 +96,6 @@ public class MiningBiome {
         List<MiningDrop> possibleDrops = drops.get(source);
         if (possibleDrops == null || possibleDrops.isEmpty()) return null;
 
-        // Si solo hay un drop posible o el jugador no tiene suerte, usamos el cálculo rápido estándar
         if (possibleDrops.size() == 1 || playerLuck <= 0) {
             double totalWeight = possibleDrops.stream().mapToDouble(MiningDrop::getWeight).sum();
             double randomValue = ThreadLocalRandom.current().nextDouble() * totalWeight;
@@ -94,7 +110,6 @@ public class MiningBiome {
             return possibleDrops.getFirst();
         }
 
-        // 1. Encontrar el peso más alto (este será considerado el drop "común")
         double highestWeight = 0;
         for (MiningDrop drop : possibleDrops) {
             if (drop.getWeight() > highestWeight) {
@@ -102,23 +117,18 @@ public class MiningBiome {
             }
         }
 
-        // 2. Recalcular los pesos aplicando la suerte a los ítems raros
         double totalAdjustedWeight = 0.0;
         Map<MiningDrop, Double> adjustedWeights = new HashMap<>();
 
         for (MiningDrop drop : possibleDrops) {
             double currentWeight = drop.getWeight();
-
-            // Si el drop NO es el más común (tiene un peso menor al máximo), la suerte lo mejora
             if (currentWeight < highestWeight) {
                 currentWeight = currentWeight * (1.0 + (playerLuck / 100.0));
             }
-
             adjustedWeights.put(drop, currentWeight);
             totalAdjustedWeight += currentWeight;
         }
 
-        // 3. Tirar el dado con los nuevos pesos inflados
         double randomValue = ThreadLocalRandom.current().nextDouble() * totalAdjustedWeight;
         double currentSum = 0;
 
@@ -130,6 +140,15 @@ public class MiningBiome {
         }
 
         return possibleDrops.getFirst();
+    }
+
+    // Método para obtener un drop de referencia o el primero configurado para ese material (útil para validar antes de minar)
+    public MiningDrop getFirstDropFor(Material source) {
+        List<MiningDrop> list = drops.get(source);
+        if (list != null && !list.isEmpty()) {
+            return list.getFirst();
+        }
+        return null;
     }
 
     public int getTotalUniqueSources() { return uniqueSourceIds.size(); }

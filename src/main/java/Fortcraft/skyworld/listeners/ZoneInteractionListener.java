@@ -1,6 +1,7 @@
 package Fortcraft.skyworld.listeners;
 
 import Fortcraft.skyworld.managers.*;
+import Fortcraft.skyworld.utils.CooldownManager;
 import Fortcraft.skyworld.zones.FarmZone;
 import Fortcraft.skyworld.zones.ForagingZone;
 import Fortcraft.skyworld.zones.MiningZone;
@@ -15,10 +16,9 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class ZoneInteractionListener implements Listener {
@@ -28,9 +28,6 @@ public class ZoneInteractionListener implements Listener {
     private final ForagingManager foragingManager;
     private final QuestManager questManager;
 
-    private final Map<UUID, Long> interactCooldown = new HashMap<>();
-    private static final long COOLDOWN_TIME = 250;
-
     public ZoneInteractionListener(ManagerHandler manager) {
         this.miningManager = manager.getMiningManager();
         this.farmManager = manager.getFarmManager();
@@ -39,8 +36,9 @@ public class ZoneInteractionListener implements Listener {
     }
 
     @EventHandler
-    public void onQuit(org.bukkit.event.player.PlayerQuitEvent e) {
-        interactCooldown.remove(e.getPlayer().getUniqueId());
+    public void onQuit(PlayerQuitEvent e) {
+        // Usamos el gestor centralizado
+        CooldownManager.remove(e.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -49,56 +47,54 @@ public class ZoneInteractionListener implements Listener {
 
         if (p.isOp() && p.getGameMode() == GameMode.CREATIVE) return;
 
-        long now = System.currentTimeMillis();
+        Block block = e.getBlock();
+        String blockTypeName = block.getType().name();
         UUID uuid = p.getUniqueId();
-        if (interactCooldown.containsKey(uuid) && (now - interactCooldown.get(uuid) < COOLDOWN_TIME)) {
+
+        // 1. CHEQUEO GLOBAL DE COOLDOWN
+        if (CooldownManager.isOnCooldown(uuid)) {
             e.setCancelled(true);
             return;
         }
 
-        Block block = e.getBlock();
-        e.setCancelled(true);
-        e.setDropItems(false);
-
-        String blockTypeName = block.getType().name();
-
+        // 2. ZONA DE MINERÍA
         MiningZone miningZone = miningManager.getZoneAt(block);
         if (miningZone != null) {
-            boolean success = miningManager.handleMine(p, block, miningZone);
-            if (!success) {
-                interactCooldown.put(uuid, now);
-            } else {
-                // INYECCIÓN DE MISIÓN: Minar
-                questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
-            }
+            e.setCancelled(true);
+            // Si intenta romper bloque de minería sin esperar, penalizamos con cooldown
+            CooldownManager.setCooldown(uuid);
             return;
         }
 
+        e.setCancelled(true);
+        e.setDropItems(false);
+
+        // 3. ZONA DE FARMING
         FarmZone farmZone = farmManager.getZoneAt(block.getLocation());
         if (farmZone != null) {
             boolean success = farmManager.handleHarvest(p, block, farmZone);
             if (!success) {
-                interactCooldown.put(uuid, now);
+                CooldownManager.setCooldown(uuid);
             } else {
-                // INYECCIÓN DE MISIÓN: Cosechar/Farming
                 questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
             }
             return;
         }
 
+        // 4. ZONA DE FORAGING
         ForagingZone foragingZone = foragingManager.getZoneAt(block.getLocation());
         if (foragingZone != null) {
             boolean success = foragingManager.handleBreak(p, block, foragingZone);
             if (!success) {
-                interactCooldown.put(uuid, now);
+                CooldownManager.setCooldown(uuid);
             } else {
-                // INYECCIÓN DE MISIÓN: Talar/Foraging
                 questManager.handleProgress(p, Fortcraft.skyworld.quests.QuestType.MINE_BLOCK, blockTypeName, 1);
             }
             return;
         }
 
-        interactCooldown.put(uuid, now);
+        // Fallback: Si no encaja en ninguna zona, aplicamos cooldown para evitar spam
+        CooldownManager.setCooldown(uuid);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

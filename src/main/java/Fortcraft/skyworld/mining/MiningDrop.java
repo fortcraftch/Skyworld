@@ -9,15 +9,17 @@ import org.bukkit.inventory.ItemStack;
 
 public class MiningDrop {
     private final Material source;
-    private final String sourceId; // NUEVO
+    private final String sourceId;
     private final String sourceName;
     private final String itemId;
     private final double weight;
     private final int amount;
     private final Material transformTo;
     private final int regenTime;
+    private final double requiredPower; // NUEVO ATRIBUTO
+    private final double hardness;      // NUEVO ATRIBUTO
 
-    public MiningDrop(Material source, String sourceId, String sourceName, String itemId, double weight, int amount, Material transformTo, int regenTime) {
+    public MiningDrop(Material source, String sourceId, String sourceName, String itemId, double weight, int amount, Material transformTo, int regenTime, double requiredPower, double hardness) {
         this.source = source;
         this.sourceId = sourceId;
         this.sourceName = sourceName;
@@ -26,6 +28,8 @@ public class MiningDrop {
         this.amount = amount;
         this.transformTo = transformTo;
         this.regenTime = regenTime;
+        this.requiredPower = requiredPower;
+        this.hardness = hardness;
     }
 
     public void giveToStorage(Player player, int totalAmount) {
@@ -44,9 +48,7 @@ public class MiningDrop {
         var playerData = dataManager.getPlayerData(player.getUniqueId());
 
         playerData.discover(player.getUniqueId(), this.sourceId, this.sourceName);
-
         playerData.getStorageBag().addItemWithoutDiscovery(item, itemId, itemRarity);
-
         playerData.queueChatDrop(itemId, totalAmount);
     }
 
@@ -58,4 +60,10 @@ public class MiningDrop {
     public int getAmount() { return amount; }
     public Material getTransformTo() { return transformTo; }
     public int getRegenTime() { return regenTime; }
+    public double getRequiredPower() { return requiredPower; }
+    public double getHardness() { return hardness; }
+
+    private Object transformTool() {
+        return null;
+    }
 }

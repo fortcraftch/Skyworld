@@ -20,7 +20,13 @@ public class MiningManager implements Manager {
     @Override
     public void load() {
         startGlobalRegenTask();
+
+        org.bukkit.Bukkit.getPluginManager().registerEvents(
+                new Fortcraft.skyworld.listeners.MiningListener(Skyworld.getInstance().getManagerHandler()),
+                Skyworld.getInstance()
+        );
     }
+
 
     @Override
     public void unload() {
