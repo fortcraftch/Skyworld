@@ -373,6 +373,23 @@ foraging_biomes:
             weight: 10.0
             amount: 1
 
+excavation_biomes:
+  sand_ruins:
+    display_name: "<gradient:#60DE4C:#259F0B>Zona Arqueologica"
+    blocks:
+      SAND:
+        name: "Hierro antiguo"
+        regen_time: 5
+        drops:
+          roble:
+            item_id: "iron"
+            weight: 90.0
+            amount: 1
+          roble_denso:
+            item_id: "dense_iron"
+            weight: 10.0
+            amount: 1
+
 zones:
   crypt_entrance:
     type: MOB
@@ -463,14 +480,14 @@ zones:
       biome: campo_trigo
     priority: 1
 
-  area_test_huerto:
-    type: FARMING
+  area_test_arqueologia:
+    type: EXCAVATION
     world: world
     area:
       pos1: { x: 258, y: 60, z: 70 }
       pos2: { x: 251, y: 66, z: 76 }
-    farming:
-      biome: campo_trigo
+    excavation:
+      biome: sand_ruins
     priority: 1
 
   bosque_inicial:

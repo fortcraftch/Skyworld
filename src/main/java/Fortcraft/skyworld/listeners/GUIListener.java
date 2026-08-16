@@ -1,11 +1,9 @@
 package Fortcraft.skyworld.listeners;
 
 import Fortcraft.skyworld.Skyworld;
-import Fortcraft.skyworld.menu.LoadoutGUI;
 import Fortcraft.skyworld.utils.PlayerMode;
 import Fortcraft.skyworld.logbook.LogbookGUI;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -20,11 +18,15 @@ public class GUIListener implements Listener {
 
     private final NamespacedKey KEY_BIOME_ID;
     private final NamespacedKey KEY_BACK_BUTTON;
+    private final NamespacedKey KEY_CHANGE_MODE;
+    private final NamespacedKey KEY_LOGBOOK_CONTEXT;
 
     public GUIListener() {
         // Inicializamos las keys una sola vez para mejorar rendimiento
         this.KEY_BIOME_ID = new NamespacedKey(Skyworld.getInstance(), "skyworld_biome_id");
         this.KEY_BACK_BUTTON = new NamespacedKey(Skyworld.getInstance(), "back_button");
+        this.KEY_CHANGE_MODE = Skyworld.getKey("change_mode");
+        this.KEY_LOGBOOK_CONTEXT = Skyworld.getKey("logbook_context");
     }
 
     @EventHandler
@@ -37,62 +39,88 @@ public class GUIListener implements Listener {
         String title = LegacyComponentSerializer.legacySection().serialize(e.getView().title());
 
         // -----------------------------------------------------------
-        // CASO 1: BITÁCORA (Navegación y Biomas)
-        // Añadimos "Yacimientos:" para el sistema de excavación
+        // CASO 1: BITÁCORA (Navegación, Habilidades y Biomas)
         // -----------------------------------------------------------
-        if (title.contains("Bitácora") || title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:") || title.contains("Yacimientos:")) {
-            e.setCancelled(true); // Nadie puede robar items de la bitácora
-            handleLogbookClick(e, title); // Pasamos el título para detectar el modo
+        if (title.contains("Bitácora") || title.contains("Ruta:") || title.contains("Habilidad:")
+                || title.contains("Biomas:") || title.contains("Bioma:") || title.contains("Capa:")
+                || title.contains("Cultivos:") || title.contains("Árboles:") || title.contains("Yacimientos:")) {
+
+            e.setCancelled(true); // Cancela para evitar que se muevan items
+            handleLogbookClick(e, title);
         }
     }
 
     private void handleLogbookClick(InventoryClickEvent e, String title) {
         Player p = (Player) e.getWhoClicked();
         ItemStack item = e.getCurrentItem();
+        if (item == null) return;
+
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
 
+        // Detección precisa del modo actual según el título de la interfaz
         PlayerMode currentMode = PlayerMode.GLOBAL;
-        if (title.contains("Pesca") || title.contains("Bioma:")) {
+        if (title.contains("Pesca")) {
             currentMode = PlayerMode.FISHING;
-        } else if (title.contains("Minería") || title.contains("Capa:")) {
+        } else if (title.contains("Minería") || title.contains("Minera")) {
             currentMode = PlayerMode.MINING;
-        } else if (title.contains("Granja") || title.contains("Cultivos:")) {
+        } else if (title.contains("Granja")) {
             currentMode = PlayerMode.FARMING;
-        } else if (title.contains("Foraging") || title.contains("Árboles:")) {
+        } else if (title.contains("Foraging")) {
             currentMode = PlayerMode.FORAGING;
-        } else if (title.contains("Arqueologia") || title.contains("Yacimientos:")) {
+        } else if (title.contains("Arqueología") || title.contains("Arqueologia")) {
+            currentMode = PlayerMode.EXCAVATION;
+        } else if (title.contains("Bioma:")) {
+            currentMode = PlayerMode.FISHING;
+        } else if (title.contains("Capa:")) {
+            currentMode = PlayerMode.MINING;
+        } else if (title.contains("Cultivos:")) {
+            currentMode = PlayerMode.FARMING;
+        } else if (title.contains("Árboles:")) {
+            currentMode = PlayerMode.FORAGING;
+        } else if (title.contains("Yacimientos:")) {
             currentMode = PlayerMode.EXCAVATION;
         }
 
-        // A) CAMBIAR DE MODO (Desde Global a Profesiones)
-        if (meta.getPersistentDataContainer().has(Skyworld.getKey("change_mode"), PersistentDataType.STRING)) {
-            String modeStr = meta.getPersistentDataContainer().get(Skyworld.getKey("change_mode"), PersistentDataType.STRING);
-            PlayerMode targetMode = PlayerMode.valueOf(modeStr);
-            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-            LogbookGUI.open(p, targetMode, null);
+        var pdc = meta.getPersistentDataContainer();
+
+        // A) CAMBIAR DE MODO O NAVEGAR CON CONTEXTO
+        if (pdc.has(KEY_CHANGE_MODE, PersistentDataType.STRING)) {
+            String modeStr = pdc.get(KEY_CHANGE_MODE, PersistentDataType.STRING);
+            String context = pdc.get(KEY_LOGBOOK_CONTEXT, PersistentDataType.STRING);
+
+            try {
+                PlayerMode targetMode = PlayerMode.valueOf(modeStr);
+                p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                LogbookGUI.open(p, targetMode, context);
+            } catch (IllegalArgumentException ignored) { }
             return;
         }
 
-        // B) CLICK EN UN BIOMA (Entrar al nivel 2)
-        if (meta.getPersistentDataContainer().has(KEY_BIOME_ID, PersistentDataType.STRING)) {
-            String biomeId = meta.getPersistentDataContainer().get(KEY_BIOME_ID, PersistentDataType.STRING);
+        // B) CLICK EN UN BIOMA ESPECÍFICO (Entrar al detalle del bioma)
+        if (pdc.has(KEY_BIOME_ID, PersistentDataType.STRING)) {
+            String biomeId = pdc.get(KEY_BIOME_ID, PersistentDataType.STRING);
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             LogbookGUI.open(p, currentMode, biomeId);
             return;
         }
 
-        // C) BOTÓN VOLVER (Navegación hacia atrás)
-        if (meta.getPersistentDataContainer().has(KEY_BACK_BUTTON, PersistentDataType.BYTE)) {
+        // C) BOTÓN VOLVER (Navegación contextual hacia atrás)
+        if (pdc.has(KEY_BACK_BUTTON, PersistentDataType.BYTE)) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
 
-            // Si estamos dentro de un bioma específico, volvemos a la lista de biomas
-            if (title.contains("Bioma:") || title.contains("Capa:") || title.contains("Cultivos:") || title.contains("Árboles:") || title.contains("Yacimientos:")) {
-                LogbookGUI.open(p, currentMode, null);
-            } else {
-                // Si estamos en la lista de biomas, volvemos al menú GLOBAL
-                LogbookGUI.open(p, PlayerMode.GLOBAL, null);
+            String context = pdc.get(KEY_LOGBOOK_CONTEXT, PersistentDataType.STRING);
+            String modeStr = pdc.get(KEY_CHANGE_MODE, PersistentDataType.STRING);
+
+            if (modeStr != null) {
+                try {
+                    PlayerMode targetMode = PlayerMode.valueOf(modeStr);
+                    LogbookGUI.open(p, targetMode, context);
+                    return;
+                } catch (IllegalArgumentException ignored) { }
             }
+
+            LogbookGUI.open(p, PlayerMode.GLOBAL, null);
         }
     }
 }
